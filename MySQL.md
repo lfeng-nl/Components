@@ -7,8 +7,9 @@
   - 数据库名称、表名称、字段名称全部小写；
   - SQL语句必须以分号结尾；
   - 但实际上，SQL并不区分大小写，只是认为约定，方便区分；
-
 - 数据库默认端口：3306；
+
+### 1.数据库操作
 
 - 创建数据库
 
@@ -27,9 +28,27 @@
 
 - 打开数据库：`USE database_name;`
 
+### 2.表操作
+
 - 创建数据表：`CREATE TABLE table_name(colume_name data_type,...);`
 
 - 查看表列表：`SHOW TABLES;`
+
+- 修改数据表内容：`ALTER TABLE tb_name ...`
+
+  - 添加：`... ADD [COLUNMS] col_name column_define [FIRST|AFTER col_name]`
+  - 添加多列：`... ADD [COLUMNS](col_name column_define,...);`
+  - 删除列：`... DROP [COLUMNS] col_name;`
+  - `DROP`和`ADD`可以混用，用`,`隔开即可；
+  - 添加主键约束：`... ADD [CONSTRAINT [symble]] PRIMARY KEY (col_name);`
+  - 删除主键约束：`... DROP PRIMARY KEY;`
+  - 添加唯一约束：`... ADD [CONSTRAINT [symble]] UNIQUE (col_name, col_name2);`
+  - 删除唯一约束：`... DROP {INDEX|KEY} index_name;`
+  - 添加外键约束：`... ADD [CONSTRAINT [symble]] FOREIGN KEY (col_name) REFERENCES tb_name(col_name)`
+  - 添加/删除默认约束：`... ALTER col_name {SET DEFAULT lit|DROP DEFAULT}`
+  - 修改列定义（定义，位置）：`... MODIFY  col_name col_define [FIRST|AFTER col_namex];`**定义需要写上**
+  - 修改列（名称，定义，位置）：`... CHANGE old_col_name new_col_name col_define [FIRST|AFTER col_name]`
+  - 修改表的名称：`... RENAME [TO|AS] new_tab_name;` 或者 `RENAME tab_name TO new_tab_name;`
 
 - 查看名为`tb_name`的数据表的详细结构：`SHOW COLUMNS FROM tb_name;`
 
@@ -104,13 +123,15 @@
   | TIMESTAMP | '0000-00-00 00:00:00' |
   | YEAR      | 0000                  |
 
-## 3.属性
+## 3.约束
 
 - NOT NULL：非空约束，NULL值可以为空，NOT NULL值必须非空；
 - PRIMARY KEY：主键约束，每张表中只允许一个主键，主键记录保证唯一，主键自动为NOT NULL；
 - UNIQUE KEY：唯一约束，保证记录唯一，==可以为NULL==，可以存在多个唯一约束；
 - DEFAULT：默认约束，如果插入记录时，没有明确为字段赋值，则自动赋予默认值；
 - FOREIGN KEY：外键约束，必须参考另一个表的主键，被外键约束的列，取值必须在它参考的列中有对应值；
+  - 外键约束的参照：
+- 表级约束和列级约束：对一个数据列建立的约束成为列级约束；对多个数据列建立的约束称为表级约束；
 
 ## 4.SELECT语句
 
