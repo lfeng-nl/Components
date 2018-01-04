@@ -32,6 +32,7 @@
 
 - 创建数据表：`CREATE TABLE table_name(colume_name data_type,...);`
 - 查看表列表：`SHOW TABLES;`
+- 查看名为`tb_name`的数据表的详细结构：`SHOW COLUMNS FROM tb_name;`
 - 修改数据表内容：`ALTER TABLE tb_name ...`
 
   - 添加：`... ADD [COLUNMS] col_name column_define [FIRST|AFTER col_name]`
@@ -41,13 +42,14 @@
   - 添加主键约束：`... ADD [CONSTRAINT [symble]] PRIMARY KEY (col_name);`
   - 删除主键约束：`... DROP PRIMARY KEY;`
   - 添加唯一约束：`... ADD [CONSTRAINT [symble]] UNIQUE (col_name, col_name2);`
-  - 删除唯一约束：`... DROP {INDEX|KEY} index_name;`
-  - 添加外键约束：`... ADD [CONSTRAINT [symble]] FOREIGN KEY (col_name) REFERENCES tb_name(col_name)`
-  - 修改默认约束：`... ALTER col_name {SET DEFAULT lit|DROP DEFAULT}`
-  - 修改列定义（定义，位置）：`... MODIFY  col_name col_define [FIRST|AFTER col_namex];`**定义需要写上**
+  - 删除唯一约束：`... DROP {INDEX|key_name} index_name;`
+  - 添加外键约束：`... ADD [CONSTRAINT [symble]] FOREIGN KEY (col_name) REFERENCES tb_name(col_name);`
+  - 修改默认约束：`... ALTER col_name {SET DEFAULT lit|DROP DEFAULT};`
+  - 添加非空约束：`... MODIFY col_name col_define NOT NULL;`
+  - 删除非空约束：`... MODIFY col_name col_define NULL` 注意:==列定义是否需要修改==
+  - 修改列定义：`... MODIFY  col_name col_define [FIRST|AFTER col_namex];`**定义需要写上**，可以修改定义、位置
   - 修改列（名称，定义，位置）：`... CHANGE old_col_name new_col_name col_define [FIRST|AFTER col_name]`
-  - 修改表的名称：`... RENAME [TO|AS] new_tab_name;` 或者 `RENAME tab_name TO new_tab_name;`
-- 查看名为`tb_name`的数据表的详细结构：`SHOW COLUMNS FROM tb_name;`
+  - 修改表的名称：`... RENAME [TO|AS] new_tab_name;` 
 
 ### 3.表记录操作
 
@@ -86,7 +88,7 @@ SELECT select_expr [,select_expr ...]
 - 查询结果排序`ORDER BY` ：默认升序(`ASC`)，降序(`DESC`)，例：`ORDER BY {col_name|position} [ASC|DESC] ，{col_name|positin} [ASC|DESC];` 可以设置多条规则，当前条满足后，对其中相等的再次排序；
 - 限制查询结果返回的数量`LIMIT` ：
   - `LIMIT {[offset,] row_cout` 即从第`offset`条开始（0开始）返回`row_count`条结果； 
-  -  `LIMIT row_count OFFSET offset}`  同上；
+  - `LIMIT row_count OFFSET offset}`  同上；
 - 内置函数和计算：`COUNT(),SUM(),AVG(),MAX(),MIN();`
 
 ### 5.子查询和连接
@@ -105,8 +107,6 @@ SELECT select_expr [,select_expr ...]
   FROM emplyee JOIN department 
   ON emplyee.in_dpt=department.dpt_name;
   ```
-
-### 
 
 ## 2.数据类型
 
@@ -153,12 +153,26 @@ SELECT select_expr [,select_expr ...]
 ## 3.约束
 
 - NOT NULL：非空约束，NULL值可以为空，NOT NULL值必须非空；
+
 - PRIMARY KEY：主键约束，每张表中只允许一个主键，主键记录保证唯一，主键自动为NOT NULL；
-- UNIQUE KEY：唯一约束，保证记录唯一，==可以为NULL==，可以存在多个唯一约束；
+
+  - 还有一种特殊的主键--复合主键，主键不仅可以是表中一列，也可以是表中的两列或多列共同标示：
+
+    ```sql
+    CONSTRAINT prikey_name PRIMARY KEY(col1_name,col2_name)
+    ```
+
+- UNIQUE KEY：唯一约束，保证记录唯一，==数据可以为NULL==，可以存在多个唯一约束；
+
 - DEFAULT：默认约束，如果插入记录时，没有明确为字段赋值，则自动赋予默认值；
+
 - AUTO_INCREMENT：自增；
+
 - FOREIGN KEY：外键约束，必须参考另一个表的主键，被外键约束的列，取值必须在它参考的列中有对应值；
-  - 外键约束的参照：
+  ```sql
+  CONSTRANT forkey_name FOREIGN KEY(col_name) REFERENCES tab_name(col1_name);
+  ```
+
 - 表级约束和列级约束：对一个数据列建立的约束成为列级约束；对多个数据列建立的约束称为表级约束；
 
 ## 4.运算符和函数
