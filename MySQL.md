@@ -93,7 +93,24 @@ SELECT select_expr [,select_expr ...]
 
 ### 5.子查询和连接
 
+子查询（subquery）指出现在其他SQL语句内的SELECT子句；子查询外层可以是：SELECT、INSERT、UPDATE、SET、或DO；
+
 - 子查询：例`SELECT age_avg FROM tb_name WHERE class IN(SELECT class FROM tb2_name WHERE name='Tom');` 查询名字为`Tom`所在`class`的 `age_avg`，但这两个字段不在同一张表中，可以用子查询；
+- 比较运算符引起的子查询：可以用`ANY, SOME, ALL`修饰比较运算符号，符合其中的（ANY，SOME）一个，所有（ALL）；
+- `[NOT] IN`引发的子查询：`... IN(SELECT ...);`
+- `[NOT] EXISTS`引发的子查询：如果子查询返回任何行，`EXISTS`将返回TRUE；
+- 将查询结果写入数据表：`INSERT [INTO] tbl_name [(col_name,..)] SELECT ...`
+- 多表更新：参照另外的表更新本表的记录；`UPDATE table_references SET`
+- `CREATE...SELECT`:创建数据表的同时，将查询结果写入到数据表，
+
+连接：在SELECT语句、多表更新、多表删除语句中支持JOIN操作：
+
+- 语法结构`A表 连接类型 B表 ON 连接条件` ：`table_reference {INNER JOIN| |{LEFT|RIGHT}} JOIN} table_reference ON conditional_expr;` 一般用ON关键字来设定连接条件，用WHERE关键字进行结果及记录的过滤。
+- 连接形式：内连接、左外连接、右外连接；
+  - 内连接`INNER JOIN`: 仅显示符合连接条件的记录，即交集部分；
+  - 左外连接`LEFT JOIN`:显示左表的全部记录及右表符合连接记录条件的记录；
+  - 右外连接 `RIGHT JOIN`:显示右表的全部记录及左表符合连接记录条件的记录；
+
 
 - 连接查询：在处理多个表时，子查询只能查询显示同一个表中的信息。如果需要多个表中信息，则需要连接（join）操作，基本思想就是把两个表当做一个新的表来操作；例如：
 
