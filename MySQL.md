@@ -42,13 +42,14 @@
   - 添加主键约束：`... ADD [CONSTRAINT [symble]] PRIMARY KEY (col_name);`
   - 删除主键约束：`... DROP PRIMARY KEY;`
   - 添加唯一约束：`... ADD [CONSTRAINT [symble]] UNIQUE (col_name, col_name2);`
-  - 删除唯一约束：`... DROP {INDEX|key_name} index_name;`
+  - 删除唯一约束：`... DROP {INDEX|KEY} index_name;`
   - 添加外键约束：`... ADD [CONSTRAINT [symble]] FOREIGN KEY (col_name) REFERENCES tb_name(col_name);`
   - 修改默认约束：`... ALTER col_name {SET DEFAULT lit|DROP DEFAULT};`
   - 添加非空约束：`... MODIFY col_name col_define NOT NULL;`
   - 删除非空约束：`... MODIFY col_name col_define NULL` 注意:==列定义是否需要修改==
   - 修改列定义：`... MODIFY  col_name col_define [FIRST|AFTER col_namex];`**定义需要写上**，可以修改定义、位置
   - 修改列（名称，定义，位置）：`... CHANGE old_col_name new_col_name col_define [FIRST|AFTER col_name]`
+  - ==`MODIFY` 和 `CHANGE` 的区别在于，`CHANGE` 允许修改列名称；==
   - 修改表的名称：`... RENAME [TO|AS] new_tab_name;` 
 
 ### 3.表记录操作
@@ -169,6 +170,12 @@ SELECT select_expr [,select_expr ...]
 
 ## 3.约束
 
+约束是一种限制，它通过对表的行为或列的数据做出限制，来确保数据的完整性，唯一性。
+
+| 约束类型 | 主键          | 默认值     | 唯一         | 外键          | 非空       | 检查    |
+| ---- | ----------- | ------- | ---------- | ----------- | -------- | ----- |
+| 关键字  | PRIMARY KEY | DEFAULT | UNIQUE KEY | FOREIGN KEY | NOT NULL | CHECK |
+
 - NOT NULL：非空约束，NULL值可以为空，NOT NULL值必须非空；
 
 - PRIMARY KEY：主键约束，每张表中只允许一个主键，主键记录保证唯一，主键自动为NOT NULL；
@@ -183,8 +190,6 @@ SELECT select_expr [,select_expr ...]
 
 - DEFAULT：默认约束，如果插入记录时，没有明确为字段赋值，则自动赋予默认值；
 
-- AUTO_INCREMENT：自增；
-
 - FOREIGN KEY：外键约束，必须参考另一个表的主键，被外键约束的列，取值必须在它参考的列中有对应值；
   ```sql
   CONSTRANT forkey_name FOREIGN KEY(col_name) REFERENCES tab_name(col1_name);
@@ -192,7 +197,24 @@ SELECT select_expr [,select_expr ...]
 
 - 表级约束和列级约束：对一个数据列建立的约束成为列级约束；对多个数据列建立的约束称为表级约束；
 
-## 4.运算符和函数
+- AUTO_INCREMENT：自增，指定了`AUTO_INCREMENT` 的列必须建立索引；指定了`AUTO_INCREMENT` 的列，在插入时自动生成编号，从1开始递增；
+
+## 4.索引index
+
+索引是用来快速地寻找那些具有特定值的记录，主要是为了检索的方便，是为了加快访问速度，按一定的规则创建的；MySQL提供多种索引：
+
+- 查看索引信息：`SHOW {INDEX|KEYS} FORM tab_name;`
+
+
+- 普通索引：
+- 唯一索引：
+- 主键索引：
+- 全文索引：
+- 单列索引和多列索引
+- 最左前缀：
+- ​
+
+## 5.运算符和函数
 
 ### a.字符函数
 
