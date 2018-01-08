@@ -286,7 +286,12 @@ SELECT select_expr [,select_expr ...]
 - `CURDATE()` ：当前日期；
 - `CURTIME()` ：当前时间；
 
-## 6.自定义函数和存储过程
+## 6.自定义变量、函数和存储过程
+
+- 自定义变量：
+  - 局部变量用一个@标识，全局变量用@@；
+  - 申明局部变量的语法：`DECLEAR var_name var_type`
+  - 变量赋值：`SET var_name=value` ;
 
 存储过程是SQL语句和控制语句的编译集合，以一个名称存储，并作为一个单元处理；
 
