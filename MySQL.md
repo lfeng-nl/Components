@@ -35,7 +35,7 @@
 
 - 创建数据表：`CREATE TABLE table_name(colume_name data_type,...);`
 - 查看表列表：`SHOW TABLES;`
-- 查看名为`tb_name`的数据表的详细结构：`SHOW COLUMNS FROM tb_name;` 或者 `DESCRIBE tab_name;`
+- 查看名为`tb_name`的数据表的详细结构：`SHOW COLUMNS FROM tb_name;` 或者 `DESCRIBE tab_name;`或者`EXPLAIN tab_name;`
 - 修改数据表内容：`ALTER TABLE tb_name ...`
 
   - 添加：`... ADD [COLUNMS] col_name column_define [FIRST|AFTER col_name]`
@@ -52,14 +52,14 @@
   - 删除非空约束：`... MODIFY col_name col_define NULL` 注意:==列定义是否需要修改==
   - 修改列定义：`... MODIFY  col_name col_define [FIRST|AFTER col_namex];`**定义需要写上**，可以修改定义、位置
   - 修改列（名称，定义，位置）：`... CHANGE old_col_name new_col_name col_define [FIRST|AFTER col_name]`
-  - ==`MODIFY` 和 `CHANGE` 的区别在于，`CHANGE` 允许修改列名称；==
+  - `MODIFY` 和 `CHANGE` 的区别在于，`CHANGE` 允许修改列名称，需要提供oldname,newname；
   - 修改表的名称：`... RENAME [TO|AS] new_tab_name;` 
 
 ### 3.表记录操作
 
 - 向数据表中写入记录`INSERT` ：
   - `INSERT [INTO] tbl_name [(col_name)] {VALUES|VALUE}({expr|DEFAULT},...),(...);`
-  - `INSERT [INTO] tbl_name SET col1_name={expr|DEFAULT},col2_name={expr|DEFAULT}，...;` 与第一种的区别：此种方式可以使用子查询； 
+  - `INSERT [INTO] tbl_name SET col1_name={expr|DEFAULT},col2_name={expr|DEFAULT}，...;` 每次只能插入一组信息；与第一种的区别：此种方式可以使用子查询； 
   - `INSERT [INTO] tbl_name [(col_name, ...)] SELECT ...;` 可将查询结果插入到指定数据表中；
 - 从文件中加载数据`LOAD DATA INFILE`：
   - `LOAT DATA INFILE '文件路径' INTO TABLE tab_name [LINES TERMINATED BY '\r\n'];`
@@ -235,12 +235,16 @@ SELECT select_expr [,select_expr ...]
 
 ### 1.索引概述
 
-所有MySQL列类型可以被索引；对相关列使用索引是提高SELECT操作的最佳途径。
+索引（Index）是帮助MySQL高效获取数据的数据结构。
+
+-   索引本质：本质就是数据结构；数据库的基本操作就是查询，每种不同的查询的算法又依赖于数据结构；所以，数据之外，数据库还维护着满足特定查找算法的数据结构，这些数据结构以某种方式引用（指向）数据；这种数据结构，就是索引；
+
+    ![索引](http://blog.codinglabs.org/uploads/pictures/theory-of-mysql-index/1.png)
 
 
 
-
-
+- 目前大部分数据库系统及文件系统都采用B-Tree或B+Tree作为索引；
+- ​
 - 查看索引信息：`SHOW {INDEX|KEYS} FORM tab_name;`
 - 对某个表的某列建立索引：
   - `ALTER TABLE tab_name ADD INDEX index_name(col_name);` 或者
@@ -354,3 +358,16 @@ SELECT select_expr [,select_expr ...]
 - SQL注入简介：利用某些数据库的外部接口把==用户数据==插入到实际的数据库==操作语言==中，从而达到入侵数据库乃至操作系统的目的。产生主要是由于程序对用户输入的数据没有进行严格的过滤，导致非法数据库查询语句的执行；
 - ​
 
+
+## 9.数据库基础
+
+-   数据模型：由数据结构、数据操作、完整约束三部分构成；
+-   数据库语言：数据定义语言DDL、数据操纵语言DML、数据控制语言DCL、
+-   数据库模式：物理模式、逻辑模式、子模式；
+-   E-R 图：矩形代表实体型，椭圆代表属性，菱形代表联系，线段，将属性和实体性相连，
+-   连接运算：从两个关系的乘运算结果中选取属性间满足一定条件的元组，构成新的关系。连接运算有两种，等值连接和自然连接；
+-   事物：用户定义的一个数据库操作序列；四个特征：原子性、一致性、隔离性、持久性；
+-   事务处理包括：数据库恢复和并发控制，
+    -   数据库恢复有两个目的：保证事务的原子性和使数据库能恢复到正确状态；
+-   触发器：用来定义一个条件以及在该条件为真时需要执行的动作。
+-   索引：
