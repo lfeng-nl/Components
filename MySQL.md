@@ -310,10 +310,10 @@ SELECT select_expr [,select_expr ...]
 只有一个返回值
 
 - `AVG()` ：平均值；
-- `COUNT()` ：计数；
-- `MAX()` 
-- `MIN()`
-- `SUM()`
+- `COUNT()` ：计数，`COUNT(*)` ：返回被选行数；
+- `MAX()` ：最大值
+- `MIN()` ：最小值
+- `SUM()` ：某列的总和；
 
 ### 5.加密函数
 
