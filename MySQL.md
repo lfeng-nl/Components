@@ -93,8 +93,9 @@ SELECT select_expr [,select_expr ...]
   - `IN` 和 `NOT IN`：`WHERE age NOT IN(26, 27);  WHERE age IN(18);`
   - `IS NULL` 和 `IS NOT NULL` :
   - 模式匹配：关键词`LIKE`和通配符一起使用，==`_` :匹配一位，`%` :不定长通配==；例：`WHERE age LIKE ’2_‘`
+  - 也可以使用`NOT LIKE`反向匹配；
   - 正则表达式：利用关键词`REGEXP ...` , 
-- 查询结果分组`GROUP BY`：`[GROUP BY {col_name|position} [HAVING where_condition], ...];` `HAVING `跟分组条件，即只对某一部分记录做分组；
+- 查询结果分组`GROUP BY`：`[GROUP BY {col_name|position} [HAVING where_condition], ...];` `HAVING `==跟分组条件==，即只对某一部分记录做分组；
 - 查询结果排序`ORDER BY` ：默认升序(`ASC`)，降序(`DESC`)，例：`ORDER BY {col_name|position} [ASC|DESC] ，{col_name|positin} [ASC|DESC];` 可以设置多条规则，当前条满足后，对其中相等的再次排序；
 - 限制查询结果返回的数量`LIMIT` ：
   - `LIMIT {[offset,] row_cout` 即从第`offset`条开始（0开始）返回`row_count`条结果； 
@@ -119,7 +120,8 @@ SELECT select_expr [,select_expr ...]
 
 > 连接：在SELECT语句、多表更新、多表删除语句中支持`JOIN`操作：
 
-- 语法结构：`A表 连接类型 B表 ON 连接条件` ：`table_reference1 {INNER JOIN| | LEFT JOIN | RIGHT JOIN} table_reference2 ON conditional_expr;` 一般用`ON`关键字来设定连接条件，用`WHERE`关键字进行结果及记录的过滤。
+- 原先查询信息从单个表中查询，使用连接可以==将多个表合并为一张供查询的表==，从而整合多表信息；
+- 语法结构：`A表 连接类型 B表 ON 连接条件 筛选条件` ：`table_reference1 {INNER JOIN| | LEFT JOIN | RIGHT JOIN} table_reference2 ON conditional_expr WHRER ...;` 一般用`ON`关键字来设定连接条件，用`WHERE`关键字进行结果及记录的过滤。
 - 连接类型：内连接、左外连接、右外连接；
   - 内连接`INNER JOIN`: 仅显示符合连接条件的记录，即交集部分；
   - 左外连接`LEFT JOIN`:显示左表的全部记录及右表符合连接记录条件的记录；
@@ -136,7 +138,19 @@ SELECT select_expr [,select_expr ...]
   #等同于
   SELECT id,name,people_num 
   FROM emplyee JOIN department 
-  ON emplyee.in_dpt=department.dpt_name;
+  ON emplyee.in_dpt=department.dpt_name
+  WHERE ...;
+
+  ```
+
+- 多表连接：
+
+  ```SQL
+   SELECT A.xxx, b.xxx 
+   FROM A
+   JOIN (B, C)
+   ON A.xx = B.xx AND/&& B.xx=C.xx
+   WHERE ...
   ```
 
 ## 2.数据类型
