@@ -73,7 +73,7 @@
 > 查询表达式：每个表达式表示想查找的一列，必须有至少一个；多列之间以英文逗号分隔；
 
 ```sql
-SELECT select_expr [,select_expr ...]
+SELECT [distinct] select_expr [,select_expr ...]
 [
   FROM table_references
   [WHERE where_condition]
@@ -84,6 +84,7 @@ SELECT select_expr [,select_expr ...]
 ]
 ```
 
+- `[distinct]`: 表示去掉重复, 默认不去除;
 - 记录的查找：`SELECT col1_name，col2_name... FROM tbl_name WHERE 限制;` 显示列将按请求顺序显示 ，可以同时查询多张表的内容；
 - 还可以对显示类名进行==别名==操作：`SELECT col_name AS new_col_name FROM tab_name;`
 - 把一列中相同的项合并：`SELECT DISTINCT col_name FROM tab_name;` 可以用`GROUP BY`实现；
@@ -212,9 +213,15 @@ SELECT select_expr [,select_expr ...]
 
 
 
-## 3.约束
+## 3.完整性约束
 
-约束是一种限制，它通过对表的行为或列的数据做出限制，来确保数据的完整性，唯一性。
+> 约束是一种限制，它通过对表的行为或列的数据做出限制，来确保数据的完整性，唯一性。
+>
+> 单个关系上约束: not null, unique, check(谓词) _自定义_;
+>
+> 参照完整性约束: 外键 ,(==定义外键的主要目的就是做参照完整性约束,参照关系中的外键的值必须在被参照关系存在,或为null., 注意相关的级联操作==)
+>
+> 参照完整性只在事务结束时做检查, 中间步骤可以破坏参照完整性,后续解除即可;
 
 | 约束类型 | 主键          | 默认值     | 唯一         | 外键          | 非空       | 检查    |
 | ---- | ----------- | ------- | ---------- | ----------- | -------- | ----- |
