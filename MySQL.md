@@ -90,8 +90,8 @@ SELECT [distinct] select_expr [,select_expr ...]
 - 把一列中相同的项合并：`SELECT DISTINCT col_name FROM tab_name;` 可以用`GROUP BY`实现；
 - `UNION [ALL]` : 将两个查询结果合并为一个，`UNION` 会合并相同项，`UNION ALL` 全部显示，速度要快很多；
 - `WHERE`后跟限制条件，提高查询精度；
-  - 限制条件可以用比较符号，也可用`AND OR`连接多个限制： `age>18 AND age<35`
-  - `IN` 和 `NOT IN`：`WHERE age NOT IN(26, 27);  WHERE age IN(18);`
+  - 限制条件可以用比较符号，也可用`AND OR`连接多个限制： `age>18 AND age<35`, MySQL 在处理OR操作之前, 优先处理AND操作符号;
+  - `IN` 和 `NOT IN`：`WHERE age NOT IN(26, 27);  WHERE age IN(18);` 括号中为枚举,而不是范围;
   - `IS NULL` 和 `IS NOT NULL` :
   - 模式匹配：关键词`LIKE`和通配符一起使用，==`_` :匹配一位，`%` :不定长通配==；例：`WHERE age LIKE ’2_‘`
   - 也可以使用`NOT LIKE`反向匹配；
