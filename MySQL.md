@@ -335,18 +335,49 @@ SELECT [distinct] select_expr [,select_expr ...]
 - `CURDATE()` ：当前日期；
 - `CURTIME()` ：当前时间；
 
-## 6.自定义变量、函数和存储过程
+## 6.存储过程, 游标, 事务处理
 
-- 自定义变量：
-  - 局部变量用一个@标识，全局变量用@@；
-  - 申明局部变量的语法：`DECLEAR var_name var_type`
-  - 变量赋值：`SET var_name=value` ;
+### 1.存储过程
 
-存储过程是SQL语句和控制语句的编译集合，以一个名称存储，并作为一个单元处理；
+> 存储过程: 类似于脚本, 保存了多条MySQL语句的集合;
 
-- `CREATE FUNCTION f1(p1 INT, p2 INT) RETURNS VARCHAR(20) RETURN ...`
-- `DELIMITER`
-- 复合结构体：`BEGIN ... NED`
+```sql
+-- 创建名为 productpricing 的存储过程
+CREATE PROCEDURE productpricing()
+BEGIN
+	SELECT Avg(prod_price) AS priceaverage
+	FROM products;
+END;
+-- 调用名为 productpricing 的存储过程, 
+CALL productpricing();
+
+-- 存储过程也可使用参数
+
+-- 删除存储过程
+DROP PROCEDURE productpricing IF EXISTS;
+```
+
+### 2.cursor 游标
+
+> 游标: 存储在MySQL服务器上的数据库查询, 是语句检索出的结果集. MySQL游标只能用于存储过程(和函数)
+
+- ```sql
+  -- 存储过程(或函数)内
+  BEGIN
+  	-- 声明变量 o 
+  	DECLARE o INT;
+  	-- 声明游标 ordernumbers
+  	DECLARE ordernumbers CURSOR
+  	FOR
+  	SELECT order_num FROM orders;
+  	-- 打开游标
+  	OPEN ordernumbers;
+  	-- 获取值
+  	FETCH ordernumbers INTO o;
+  	-- 关闭游标
+  	CLOSE ordernumbers;
+  END;
+  ```
 
 ## 7.存储引擎
 
