@@ -1,61 +1,152 @@
 ## 1.基础及及架构
 
+### 1.MySQL server
+
+- 客户端进程向服务端进程发送一段文本(SQL语句), 服务器进程处理后再向客户端进程发送一段文本(处理结果); 
+- 服务端处理可以分为三部分:
+  - 连接管理: MySQL服务器会为每一个连接进来的客户端分配一个线程;
+  - 解析优化: 包括语法解析(编译), 查询优化(外连接转换为内连接、表达式简化、子查询转为连接);
+  - 存储引擎: 对数据的存储和提取操作的封装
+
 ![MySQL](image/mysql.jpg)
 
-## 1.基本操作
+### 2.常用的存储引擎
 
-- MySQL语句规范;
-  - 关键字与函数名称全部大写；
-  - 数据库名称、表名称、字段名称全部小写；
-  - SQL语句必须以分号结尾；
-  - 但实际上，SQL并不区分大小写，只是认为约定，方便区分；
-- 数据库默认端口：3306；
-- 帮助使用：
-  - 按层次看帮助：`mysql>? contents` 会按分类列出项，然后可以再选择感兴趣的方向
-  - 直接快速查询：`mysql>? show`
+- `InnoDB`: 具备外键, 支持事务和部分事务回滚(Savepoints), 支持分布式事务(XA)
+- `MyISAM`: 占用空间小, 处理速度快, 但不支持事务完整性和并发;
+- `Memory`: 存储于内存中, 默认使用哈希索引, 速度快.
+
+### 3.系统变量和状态变量
+
+> 系统变量: 配置MySQL服务器的运行环境, 可以通过**配置文件**, **启动选项**, 或运行时进行配置;
+>
+> 状态变量: 监控MySQL服务器的运行状态;
+
+- 查看系统变量: `show variables;` 或者`show variables like 'log%';`
+  - 优先显示会话级别变量, 不存在则显示全局变量;
+  - 可以使用`show global variables;`指定显示全局变量;
+- 通过`set [GLOBAL|SESSION] variable_name = value`;
+  - 例如`SET GLOBAL sort_buffer_size=value; 或 SET @@global.sort_buffer_size=value;`
+- 重要变量:
+  - `max_connections`: 最大连接数;
+  - `auto_increment_increment`: 自增增量;
+  - `auto_increment_offset`: 起始自增点;
+- 查看状态变量: `show status`或者`show status like 'Threads%';`
+
+### 4.服务端启动配置
+
+- 默认会读取响应目录下的`my.cnf`文件;
+- `mysqld_save`: 会间接调用`mysqld`, 在启动后监控`mysqld`的运行情况;
+- 使用`--defaults-file`指定配置文件;
+
+### 5.字符编码
+
+- 使用`show charset`查看支持的字符编码;
+- 常用字符编码:
+  - `utf8bm4`: 正宗`utf-8`编码, 
+
+### 6.数据类型
+- Text类型：
+
+  | 数据类型          | 描述                                       |
+  | ------------- | ---------------------------------------- |
+  | CHAR(size)    | 最多保存size个字符，默认 255；末尾空格去除；保存长度一定，无论数据有没有填满； |
+  | VARCHAR(size) | 可变长度，size为最大允许的长度，保存时**只保存需要的字符**；       |
+  | TEXT          | 字符大对象，有四种，TINY.., MEDIUM.., LONG..;      |
+  | BLOB          | 二进制大对象，有TINY..MEDIUM..,LONG..四种；         |
+  | ENUM          | 枚举类型，`ENUM('S', 'M', 'L', 'XL', 'XLL')` ； |
+  | SET           | 可以有规定范围内的零个或多个值，规定范围由创建时给定；例如`name SET('f','s');` 则可赋值为`name='f',name='s',name='f,s'`等， |
+
+  > TEXT 和BLOB删除会在数据表中产生很大空洞，建议定期使用`OPTIMIZE TABLE`进行碎片整理；
+
+- number类型：`UNSIGNED`后缀，==可以加`(size)`表示显示宽度，与实际能存放数据大小无关！==
+
+  | 数据类型      | 存储      | 描述                                       |
+  | --------- | ------- | ---------------------------------------- |
+  | ==整数==    | ==---== | ==---==                                  |
+  | TINYINT   | 1       | `-128~127,0~255`                         |
+  | SMALLINT  | 2       | `-32768～32767,0~65535`                   |
+  | MEDIUMINT | 3       | `-8388608~8388607,0~1677215`             |
+  | INT       | 4       | `-2147483648~2147483647,0~4294967295`    |
+  | BIGINT    | 8       |                                          |
+  | ==定点数==   | ==---== | ==---==                                  |
+  | DECIMAL   |         | `DECIMAL(M,D)` ；M总位数(小数+整数)；D表示小数位；**不允许超出范围;** |
+  | NUMERIC   |         | 在MySQL中，与DECIMAL视为同一类型；                  |
+  | ==浮点数==   | ==---== | ==---==                                  |
+  | FLOAT     | 4       | `FLOAT(M,D)` ;显示宽度，M总位数，D小数位数；实际值与存储值可能不全相同 |
+  | DOUBLE    | 8       |                                          |
+  | ==BIT==   | ==---== | ==---==                                  |
+  | BIT       |         | 保存位字段的值，SET b = b'01110111'              |
+
+  > 浮点数和定点数：浮点数表示的数存在不精确的问题，但能表示更大的数据范围；对数值敏感的应该用定点数；
+  >
+  > 浮点数尽量避免比较；
+
+- 时间类型：
+
+  | 数据类型      | 描述                    |
+  | --------- | --------------------- |
+  | DATE      | ‘0000-00-00’          |
+  | TIME      | ‘00:00:00’            |
+  | DATETIME  | ‘0000-00-00 00:00:00' |
+  | TIMESTAMP | '0000-00-00 00:00:00' |
+  | YEAR      | 0000                  |
+
+
+- 注释方法：
+  - 以`#` 字符开始到行尾；
+  - 以`/*   */` 注释一段；
+
+## 2.库和表操作
+
+> 帮助使用：
+>
+> - 按层次看帮助：`mysql>? contents` 会按分类列出项，然后可以再选择感兴趣的方向
+>
+> - 直接快速查询：`mysql>? show`
 
 ### 1.数据库操作
 
-- 创建数据库
+- 创建: `CREATE DATABASE db_name;`
 
-  ```sql
-  CREATE {DATABASE|SCHEMA} db_name [DEFAULT] CHARACTER SET [=] charset_name
-  # [ ]内为可选项，{ }内为必选项；
-  # CHARACTER SET:字符编码格式；例如：CHARACTER = utf8；
-  ```
+- 查看：`SHOW {DATABASES|SCHEMAS} ` ；
 
-- 查看当前服务器下的数据库：`SHOW {DATABASES|SCHEMAS} ` ；
+- 修改：`ALTER {DATABASE|SCHEMAS} [db_name] [DEFAULT] CHARACTER SET [=] charset_name;`
 
-- 修改数据库：`ALTER {DATABASE|SCHEMAS} [db_name] [DEFAULT] CHARACTER SET [=] charset_name;`
-
-- 删除数据库：`DROP {DATABASE|SCHEMA} [IF EXISTS] db_name;`
+- 删除：`DROP {DATABASE|SCHEMA} [IF EXISTS] db_name;`
 
 
-- 打开数据库：`USE database_name;`
+- 使用数据库：`USE database_name;`
 
 ### 2.表定义操作
 
-- 创建数据表：`CREATE TABLE table_name(colume_name data_type,...);`
-- 查看表列表：`SHOW TABLES;`
-- 查看名为`tb_name`的数据表的详细结构：`SHOW COLUMNS FROM tb_name;` 或者 `DESCRIBE tab_name;`或者`EXPLAIN tab_name;`
-- 修改数据表内容：`ALTER TABLE tb_name ...`
-
-  - 添加：`... ADD [COLUNMS] col_name column_define [FIRST|AFTER col_name]`
-  - 添加多列：`... ADD [COLUMNS](col_name column_define,...);`
-  - 删除列：`... DROP [COLUMNS] col_name;`
+- 创建：`CREATE TABLE table_name(colume_name data_type,...);`
+  - 设置主键: `PRIMARY KEY`;
+  - 设置非空: `NOT NULL`;
+  - 唯一约束: `UNIQUE`;
+  - 设置外键: `FOREIGN KEY (f_key_name) REFERENCES tab_name(colume_name)`;
+  - 设置自增: `AUTO_INCREMENT`;
+    - 默认值: `DEFAULT 默认值`;
+- 查看：`SHOW TABLES;`
+- 查看名为`tb_name`的数据表的详细结构：`SHOW COLUMNS FROM tb_name;` | `DESCRIBE tab_name;`或者`EXPLAIN tab_name;`
+- 修改数据表内容：`ALTER TABLE 表名 ...`
+- 重命名: `... RENAME 新表名`
+  - 修改字段:
+    - 修改字段数据类型和索引: `... MODIFY 属性名 数据类型 约束 类型 [FIRST|AFTER xxx] ;`
+    - 修改字段名称: `... CHANGE 旧字段名 新字段名 属性;`
+  - 添加字段:
+    - 添加：`... ADD 字段名 属性 [FIRST|AFTER col_name]`
+    - 添加多列：`... ADD (字段名1 属性, 字段名2 属性);`
+  - 删除字段：
+    - `... DROP col_name;`
+  - 删除约束:
+    - 删除主键约束：`... DROP PRIMARY KEY;`
   - `DROP`和`ADD`可以混用，用`,`隔开即可；
-  - 添加主键约束：`... ADD [CONSTRAINT [symble]] PRIMARY KEY (col_name);`
-  - 删除主键约束：`... DROP PRIMARY KEY;`
-  - 添加唯一约束：`... ADD [CONSTRAINT [symble]] UNIQUE (col_name, col_name2);`
-  - 删除唯一约束：`... DROP {INDEX|KEY} index_name;`
-  - 添加外键约束：`... ADD [CONSTRAINT [symble]] FOREIGN KEY (col_name) REFERENCES tb_name(col_name);`
-  - 修改默认约束：`... ALTER col_name {SET DEFAULT lit|DROP DEFAULT};`
-  - 添加非空约束：`... MODIFY col_name col_define NOT NULL;`
-  - 删除非空约束：`... MODIFY col_name col_define NULL` 注意:==列定义是否需要修改==
-  - 修改列定义：`... MODIFY  col_name col_define [FIRST|AFTER col_namex];`**定义需要写上**，可以修改定义、位置
-  - 修改列（名称，定义，位置）：`... CHANGE old_col_name new_col_name col_define [FIRST|AFTER col_name]`
-  - `MODIFY` 和 `CHANGE` 的区别在于，`CHANGE` 允许修改列名称，需要提供oldname,newname；
-  - 修改表的名称：`... RENAME [TO|AS] new_tab_name;` 
+  - 修改表的存储引擎: `... ENGINE=存储引擎名`
+
+- 删除: `DROP TABLE tab_name`
+
+## 3.数据增删改查
 
 ### 3.表记录操作
 
@@ -155,106 +246,10 @@ SELECT [distinct] select_expr [,select_expr ...]
    FROM A
    JOIN (B, C)
    ON A.xx = B.xx AND/&& B.xx=C.xx
-   WHERE ...
+   WHERE =...
   ```
 
-## 2.数据类型
-
-- Text类型：
-
-  | 数据类型          | 描述                                       |
-  | ------------- | ---------------------------------------- |
-  | CHAR(size)    | 最多保存size个字符，默认 255；末尾空格去除；保存长度一定，无论数据有没有填满； |
-  | VARCHAR(size) | 可变长度，size为最大允许的长度，保存时**只保存需要的字符**；       |
-  | TEXT          | 字符大对象，有四种，TINY.., MEDIUM.., LONG..;      |
-  | BLOB          | 二进制大对象，有TINY..MEDIUM..,LONG..四种；         |
-  | ENUM          | 枚举类型，`ENUM('S', 'M', 'L', 'XL', 'XLL')` ； |
-  | SET           | 可以有规定范围内的零个或多个值，规定范围由创建时给定；例如`name SET('f','s');` 则可赋值为`name='f',name='s',name='f,s'`等， |
-
-  > TEXT 和BLOB删除会在数据表中产生很大空洞，建议定期使用`OPTIMIZE TABLE`进行碎片整理；
-
-- number类型：`UNSIGNED`后缀，==可以加`(size)`表示显示宽度，与实际能存放数据大小无关！==
-
-  | 数据类型      | 存储      | 描述                                       |
-  | --------- | ------- | ---------------------------------------- |
-  | ==整数==    | ==---== | ==---==                                  |
-  | TINYINT   | 1       | `-128~127,0~255`                         |
-  | SMALLINT  | 2       | `-32768～32767,0~65535`                   |
-  | MEDIUMINT | 3       | `-8388608~8388607,0~1677215`             |
-  | INT       | 4       | `-2147483648~2147483647,0~4294967295`    |
-  | BIGINT    | 8       |                                          |
-  | ==定点数==   | ==---== | ==---==                                  |
-  | DECIMAL   |         | `DECIMAL(M,D)` ；M总位数(小数+整数)；D表示小数位；**不允许超出范围;** |
-  | NUMERIC   |         | 在MySQL中，与DECIMAL视为同一类型；                  |
-  | ==浮点数==   | ==---== | ==---==                                  |
-  | FLOAT     | 4       | `FLOAT(M,D)` ;显示宽度，M总位数，D小数位数；实际值与存储值可能不全相同 |
-  | DOUBLE    | 8       |                                          |
-  | ==BIT==   | ==---== | ==---==                                  |
-  | BIT       |         | 保存位字段的值，SET b = b'01110111'              |
-
-  > 浮点数和定点数：浮点数表示的数存在不精确的问题，但能表示更大的数据范围；对数值敏感的应该用定点数；
-  >
-  > 浮点数尽量避免比较；
-
-- 时间类型：
-
-  | 数据类型      | 描述                    |
-  | --------- | --------------------- |
-  | DATE      | ‘0000-00-00’          |
-  | TIME      | ‘00:00:00’            |
-  | DATETIME  | ‘0000-00-00 00:00:00' |
-  | TIMESTAMP | '0000-00-00 00:00:00' |
-  | YEAR      | 0000                  |
-
-
-- 注释方法：
-  - 以`#` 字符开始到行尾；
-  - 以`/*   */` 注释一段；
-
-### 字符集
-
-字符集（CHARACTER）是一套符号和编码的规则，更改字符集的代价一般较高，最好开始阶段，选择正确的字符集；
-
-
-
-## 3.完整性约束
-
-> 约束是一种限制，它通过对表的行为或列的数据做出限制，来确保数据的完整性，唯一性。
->
-> 单个关系上约束: not null, unique, check(谓词) _自定义_;
->
-> 参照完整性约束: 外键 ,(==定义外键的主要目的就是做参照完整性约束,参照关系中的外键的值必须在被参照关系存在,或为null., 注意相关的级联操作==)
->
-> 参照完整性只在事务结束时做检查, 中间步骤可以破坏参照完整性,后续解除即可;
-
-| 约束类型 | 主键          | 默认值     | 唯一         | 外键          | 非空       | 检查    |
-| ---- | ----------- | ------- | ---------- | ----------- | -------- | ----- |
-| 关键字  | PRIMARY KEY | DEFAULT | UNIQUE KEY | FOREIGN KEY | NOT NULL | CHECK |
-
-- NOT NULL：非空约束，NULL值可以为空，NOT NULL值必须非空；
-
-- PRIMARY KEY：主键约束，每张表中只允许一个主键，主键记录保证唯一，主键自动为NOT NULL；
-
-  - 还有一种特殊的主键--复合主键，主键不仅可以是表中一列，也可以是表中的两列或多列共同标示：
-
-    ```sql
-    CONSTRAINT prikey_name PRIMARY KEY(col1_name,col2_name)
-    ```
-
-- UNIQUE KEY：唯一约束，保证记录唯一，==数据可以为NULL==，可以存在多个唯一约束；
-
-- DEFAULT：默认约束，如果插入记录时，没有明确为字段赋值，则自动赋予默认值；
-
-- FOREIGN KEY：外键约束，必须参考另一个表的主键，被外键约束的列，取值必须在它参考的列中有对应值；
-  ```sql
-  CONSTRANT forkey_name FOREIGN KEY(col_name) REFERENCES tab_name(col1_name);
-  ```
-
-- 表级约束和列级约束：对一个数据列建立的约束成为列级约束；对多个数据列建立的约束称为表级约束；
-
-- AUTO_INCREMENT：自增，指定了`AUTO_INCREMENT` 的列必须建立索引；指定了`AUTO_INCREMENT` 的列，在插入时自动生成编号，从1开始递增；
-
-## 4.索引 index
+## 4.索引
 
 > 索引: 存储引擎用于快速找到记录的一种数据结构; 存储引擎会先在索引中找到对应值, 然后根据匹配的索引记录找到对应的数据行.
 >
@@ -343,7 +338,9 @@ SELECT [distinct] select_expr [,select_expr ...]
 - `CURDATE()` ：当前日期；
 - `CURTIME()` ：当前时间；
 
-## 6.存储过程, 游标, 事务处理
+## 视图和触发器
+
+## 6.存储过程和函数
 
 ### 1.存储过程
 
@@ -387,33 +384,11 @@ DROP PROCEDURE productpricing IF EXISTS;
   END;
   ```
 
-## 7.存储引擎
-
-存储引擎就是存储数据、查询数据的技术；
-
-- 引擎的选用：`CREATE TABLE ... () ENGINE=engine_name`
+## 7.备份还原
 
 
-- 并发控制：当多个连接对记录进行修改时，保证数据的一致性和完整性；
 
-- 锁：共享锁、排他锁；也叫读锁，写锁；
 
-- 锁颗粒：表锁，列锁；
-
-- 事务：保证数据库的完整性；比如一个操作包含许多步骤，中间任意环节出错都应该使数据恢复至最原始的状态；
-
-- 事务的特性：ACID，原子性，一致性，隔离性，持久性；
-
-- 外键：保证数据一致性的策略
-
-- 索引：对数据表中一列或多列的值进行排序的一种结构，使用索引可以快速访问数据表中的特定信息；
-
-- MySQL存储引擎：MyISAM,InnoDB,BDB...
-
-  - Myisam：默认引擎，
-  - InnoDB：提供具有提交、回滚、和崩溃恢复能力的事物安全；相对Myisam,InnoDB写的处理效率差一些并且会占用更多的磁盘空间以保留数据和索引。
-
-  
 
 ## 8.安全
 
@@ -443,3 +418,6 @@ DROP PROCEDURE productpricing IF EXISTS;
 > binlog二进制日志: 对数据库进行增删改的SQL操作, 可以用这个日志做增量备份;
 
 - 查询日志: 
+
+## 10.调优
+
