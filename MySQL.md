@@ -81,13 +81,21 @@
 
 ### 2.表定义操作
 
+> PRIMARY KEY: 唯一约束, NOT NULL约束, 主键必须包含且唯一, 自动创建唯一索引;
+>
+> UNIQUE KEY: 唯一约束, 自动创建唯一索引;
+>
+> FOREIGN KEY:  规范数据引用完整性约束, 自动建立索引
+>
+> **以上三种KEY, 都有约束和索引双层含义 ** 
+
 - 创建：`CREATE TABLE 表名 (字段名1 属性, 字段名2 属性, ...);`
   - 设置主键: `PRIMARY KEY`;
-  - 设置非空: `NOT NULL`;
   - 唯一约束: `UNIQUE`;
   - 设置外键: `CONSTRAINT 外键别名 FOREIGN KEY (字段1, 字段2) REFERENCES 表明(字段名1, 字段名2)`;
-  - 设置自增: `AUTO_INCREMENT`;
-    - 默认值: `DEFAULT 默认值`;
+  - 设置非空: `NOT NULL`;
+  - 设置自增: `AUTO_INCREMENT`,  自增类必须建立索引;
+  - 默认值: `DEFAULT 默认值`;
 - 查看：`SHOW TABLES;`
   - 查看名为`tb_name`的数据表的详细结构：`SHOW COLUMNS FROM 表名;` | `DESCRIBE 表名;`或者`EXPLAIN 表名;`
   - 查看建表详细信息: `SHOW CREATE TABLE 表名;`
@@ -207,19 +215,33 @@
   ```
 #### 2.子查询
 
-> 子查询（subquery）指出现在其他SQL语句(增删改查)内的SELECT子句，用小括号包围；子查询外层可以是：SELECT、INSERT、UPDATE、SET、或DO；
+> 出现在其他SQL语句(增删改查)内的`SELECT`子句，用小括号包围；内层查询语句为外层查询语句提供查询条件. 
 
-- 三种引发子查询的方式：
-  - `>, <,<= ,>=` 比较运算符引起的子查询：可以用`ANY, SOME, ALL`修饰比较运算符号，符合其中的（ANY，SOME）一个，所有（ALL）；
-  - `[NOT] IN`引发的子查询：`... IN(SELECT ...);`
-  - `[NOT] EXISTS`引发的子查询：如果子查询返回任何行，`EXISTS`将返回TRUE；
-- 将查询结果写入数据表：`INSERT [INTO] tbl_name [(col_name,..)] SELECT ...`
-- 多表更新：参照另外的表更新本表的记录；`UPDATE table_references SET`
-- `CREATE...SELECT`:创建数据表的同时，将查询结果写入到数据表，
+- 带`IN`关键字子查询:
+  - `... WHERE 字段1 IN (SELECT 字段2 FROM 表名);`
+- 带比较运算符的子查询, `=, !=, >, >=, <, <=`:
+  - `... WHERE 字段1 >= (SELECT 字段1 FROM 表名 WHERE 条件);`
+- 带`EXISTS`关键字子查询:
+  - 如果内层查询到结果, 返回为`true`, 反之为`yes`;
+- 带`ANY`关键字子查询:
+  - 只要满足内层查询语句返回结果中的任何一个;
+  - `.... WHERE 字段1 >= ANY (SELECT 字段2 FROM 表名);`
+- 带`ALL`关键字子查询:
+  - 需要满足内层查询的所有结果;
+  - `... WHERE 字段1 >= ALL (SELECT 字段2 FROM 表名);`
+
+- *子查询的性能问题*
+  - 子查询通常不会像我们认为的那样, 由内到外执行, 性能上会有很大的问题;
+  - 尽量避免使用子查询;
+
+### 4.合并查询结果
+
+- `UNION`: 合并查询结果, 相同记录消除; `SELECT 语句1 UNION SELECT 语句2;`
+- `UNION ALL`: 合并查询结果, 不消除相同记录;  `SELECT 语句1 UNION ALL SELECT 语句2;`
 
 ## 4.索引
 
-> 索引: 存储引擎用于快速找到记录的一种数据结构; 存储引擎会先在索引中找到对应值, 然后根据匹配的索引记录找到对应的数据行.
+> 索引: 存储引擎对索引的数据维护一种数据结构, 达到快速查找的目的. 索引能够显著提高查询效率, 但是创建和维护索引需要消耗时间, 
 >
 > 参考: **<<高性能MySQL>> 第五章**
 
@@ -227,13 +249,11 @@
 
 - B-Tree索引: 使用B-Tree(B+Tree)数据结构来存储数据;
 
-    ![索引](http://blog.codinglabs.org/uploads/pictures/theory-of-mysql-index/1.png)
-
 - 哈希索引: 基于哈希表, 只有精确匹配的查询才有效; 只有`Memory`引擎支持;
 
-- 空间数据索引: 基于R-Tree, `MyISAM`支持, 可以用于地理数据存储;
+- 空间索引: 基于R-Tree, `MyISAM`支持, 可以用于地理数据存储;
 
-- 全文索引: 查找的是文本中的关键词, 而不是直接比较索引中的值;
+- 全文索引: 查找的是文本中的关键词, 而不是直接比较索引中的值, `MyISAM`支持;
 
 ### 2.索引概述
 
@@ -241,12 +261,18 @@
     - 减少了服务器需要扫描的数据量;
     - 避免排序和临时表;
     - 将随机I/O变为顺序I/O;
-
 - 查看索引信息：`SHOW {INDEX|KEYS} FORM tab_name;`
-- 对某个表的某列建立索引：
-  - `ALTER TABLE tab_name ADD INDEX index_name(col_name);` 或者
-  - `CREATE INDEX index_name ON tab_name(col_name);`
+- 添加索引：`UNIQUE`: 唯一性索引, `FULLTEXT`: 全文索引, `SPATIAL`: 空间索引;
+  - 建表时创建索引:
+    - `CREATE TABLE 表名 (字段 ...) [UNIQUE|FULLTEXT|SPATIAL] INDEX|KEY [索引名] (字段1, 字段2... [(长度)] [ASC|DESC]);`
+    - `ASC`升序排列, 默认;
+    - `DESC`: 降序排序, 调高倒序查询速度;
+  - 对已存在的表建立
+      - `ALTER TABLE 表名 ADD [UNIQUE|FULLTEXT|SPATIAL] INDEX 索引名 表名(字段 [(长度)]);` 
+      - `CREATE [UNIQUE|FULLTEXT|SPATIAL] INDEX 索引名 ON 表名(字段名 [(长度)]);`
 
+- 删除索引:
+  - `DROP INDEX 索引名 ON 表名;`
 
 ### 3.高效的索引策略
 
@@ -256,6 +282,7 @@
 
     - 对很长的字符列建立索引会使得索引变得大且慢,  通常可以索引开始的部分字符;
     - 同理, 部分情况(如前缀相同)也可以对后缀建立索引;
+    - **对后缀建立索引可以采用倒序存储的方式; 结合触发器使用;**
 
 - 多列索引
 
@@ -267,69 +294,47 @@
 
 - 选择合适的**索引列顺序**
 
-    - 
 
-## 5.运算符和函数
+## 5.特殊主题
 
-### 1.字符函数
+### 1.视图
 
-- `CONCAT()` :用于字符连接，可以连接多个字符串，`CONCAT('lfeng', 'hqh', 'xiaoxi');`
-- `CONCTA_WS()` ：用指定分隔符(可以为字符串)连接，第一个参数为分隔符，`CONCAT_WS('---', 'lfeng', 'hou');`
-- `FORMAT()`：数字格式化千分位，第二个参数指定小数点后的位数；`FORMAT(1235.12312, 2);`
-- `LOWER()` :字符串转为小写；`LOWER('MySQL');`
-- `UPPER()` :字符串转为大写；`LOWER('MySQL');`
-- `LEFT()` ：从字符串的左测获取指定数目的字符；`LEFT('MySQL', 2);`
-- `RIGHT()`：从字符串的右侧获取指定数目的字符；`RIGHT('MySQL', 3);`
-- `LENGTH()`：获取字符串的长度；`LENGTH('lfeng');`
-- `LTRIM()` ：删除字符串前导空格（首字母前的空格）；
-- `RITIM()`  ：删除字符串后导空格（后续空格）；
-- `TRIM()` ：删除前导和后导空格；
-- `SUBSTRING()` :进行字符串截取；从第几位开始，截取n位，`SUBSTRING（'MySQL', 1, 2）--> 'My'`
-- `REPLACE()` ：替换，将字符串中的`A`替换为`B`；`REPLACE('???My??SQL??', '??', ''); -->'?MySQL'`,
-- `[NOT] LINE` ：
+> 视图又称虚拟表, 是由一个表或多个表导出的虚拟表; 
 
-### 2.数值运算符与函数
+- 作用: 
+  - 简化操作
+  - 增加数据安全性, 方便设置权限
+  - 提高表的逻辑独立性
+  - **甚至可以将所有查询做为视图存储, 所有查询仅查询视图;**
+- 创建
+  - `CREATE|REPLACE [ALGORITHM={UNDEFINED|MERGE|TEMPTABLE}] VIEW 视图名[{column_list}] AS SELECT语句;`
+- 查看
+  - `DESCRIBE 视图名;`
+- 删除
+  - `DROP VIEW 视图名;`
 
-- `CEIL()`：进一取整，小数位舍弃，整数+1,；
-- `FLOOR()` ：舍一取整，小数位舍弃，
-- `POWER()` ：幂运算，n的m次方，`POWER(2,3);`
-- `ROUND()` ：四舍五入小数位，`ROUND(2.125, 2); -->2.13` ，位数可以为负，表示整数位；
-- `TRUNCATE()` ：数字截断，不做四舍五入；
+### 2.触发器
 
-### 3.比较运算符与函数
+> 触发器是由`INSERT, UPDATE, DELETE`等事件来触发某种特定操作.
 
-- `[NOT] BETWEEN ... AND ...` ：在范围之内；
-- `[NOT] IN` ：在不在其中；
-- `IS [NOT] NULL` ： 是否为空；
+- 创建:
+  - `CREATE TRIGGER 触发器名 BEFORE|AFTER 触发事件 ON 表名 FOR EACH ROW BEGIN 执行语句 END;`
+    - 触发事件: `INSERT, UPDATE, DELETE`
+    - 使用`DELIMITER &&`修改分隔符为`&&`, 结束时修改`DELIMITER ;`
 
-### 4.聚合函数
+- 查看:
+  - `SHOW TRIGGERS;`
+  - 所有的触发器都存储在information_schema.triggers表中
+- 删除:
+  - `DROP TRIGGER 触发器名;`
 
-只有一个返回值
-
-- `AVG()` ：平均值；
-- `COUNT()` ：计数，`COUNT(*)` ：返回被选行数；
-- `MAX()` ：最大值
-- `MIN()` ：最小值
-- `SUM()` ：某列的总和；
-
-### 5.加密函数
-
-- `MD5()` ：信息摘要算法；
-- `PASSWORD()` ：
-
-### 6.日期时间函数
-
-- `NOW()` ：当前日期和时间；
-- `CURDATE()` ：当前日期；
-- `CURTIME()` ：当前时间；
-
-## 视图和触发器
-
-## 6.存储过程和函数
-
-### 1.存储过程
+### 3.存储过程
 
 > 存储过程: 类似于脚本, 保存了多条MySQL语句的集合;
+
+- 优缺点:
+  - 优点: 效率高, 简化操作, 安全性好;
+  - 缺点: 更新迭代麻烦, 不利于分库分表, 业务扩展后无法使用, 跟组件或ORM库无法兼容;
 
 ```sql
 -- 创建名为 productpricing 的存储过程
@@ -368,7 +373,59 @@ DROP PROCEDURE productpricing IF EXISTS;
   	CLOSE ordernumbers;
   END;
   ```
+### 3.运算符和函数
 
+#### 1.字符函数
+
+- `CONCAT()` :用于字符连接，可以连接多个字符串，`CONCAT('lfeng', 'hqh', 'xiaoxi');`
+- `CONCTA_WS()` ：用指定分隔符(可以为字符串)连接，第一个参数为分隔符，`CONCAT_WS('---', 'lfeng', 'hou');`
+- `FORMAT()`：数字格式化千分位，第二个参数指定小数点后的位数；`FORMAT(1235.12312, 2);`
+- `LOWER()` :字符串转为小写；`LOWER('MySQL');`
+- `UPPER()` :字符串转为大写；`LOWER('MySQL');`
+- `LEFT()` ：从字符串的左测获取指定数目的字符；`LEFT('MySQL', 2);`
+- `RIGHT()`：从字符串的右侧获取指定数目的字符；`RIGHT('MySQL', 3);`
+- `LENGTH()`：获取字符串的长度；`LENGTH('lfeng');`
+- `LTRIM()` ：删除字符串前导空格（首字母前的空格）；
+- `RITIM()`  ：删除字符串后导空格（后续空格）；
+- `TRIM()` ：删除前导和后导空格；
+- `SUBSTRING()` :进行字符串截取；从第几位开始，截取n位，`SUBSTRING（'MySQL', 1, 2）--> 'My'`
+- `REPLACE()` ：替换，将字符串中的`A`替换为`B`；`REPLACE('???My??SQL??', '??', ''); -->'?MySQL'`,
+- `[NOT] LINE` ：
+
+#### 2.数值运算符与函数
+
+- `CEIL()`：进一取整，小数位舍弃，整数+1,；
+- `FLOOR()` ：舍一取整，小数位舍弃，
+- `POWER()` ：幂运算，n的m次方，`POWER(2,3);`
+- `ROUND()` ：四舍五入小数位，`ROUND(2.125, 2); -->2.13` ，位数可以为负，表示整数位；
+- `TRUNCATE()` ：数字截断，不做四舍五入；
+
+#### 3.比较运算符与函数
+
+- `[NOT] BETWEEN ... AND ...` ：在范围之内；
+- `[NOT] IN` ：在不在其中；
+- `IS [NOT] NULL` ： 是否为空；
+
+#### 4.聚合函数
+
+只有一个返回值
+
+- `AVG()` ：平均值；
+- `COUNT()` ：计数，`COUNT(*)` ：返回被选行数；
+- `MAX()` ：最大值
+- `MIN()` ：最小值
+- `SUM()` ：某列的总和；
+
+#### 5.加密函数
+
+- `MD5()` ：信息摘要算法；
+- `PASSWORD()` ：
+
+#### 6.日期时间函数
+
+- `NOW()` ：当前日期和时间；
+- `CURDATE()` ：当前日期；
+- `CURTIME()` ：当前时间；
 ## 7.备份还原
 
 
@@ -380,8 +437,9 @@ DROP PROCEDURE productpricing IF EXISTS;
 ### 1.权限管理
 
 - 授权
-  - `GRANT priv_type ON database.table TO user [IDENTIFIED BY 'password']`
-  - `priv_type`为权限, `all`所有权限;
+  - `GRANT 权限 ON 数据库.表 TO user [IDENTIFIED BY 'password']`
+  - 权限可以为:`ALL, SELECT, CREATE. ALTER, ....`
+  - 数据库和表可以用`*`匹配所有
 - 回收权限
   - `REVOKE priv_type ON databases.table FROM user;`
 - 查看权限
@@ -403,6 +461,58 @@ DROP PROCEDURE productpricing IF EXISTS;
 > binlog二进制日志: 对数据库进行增删改的SQL操作, 可以用这个日志做增量备份;
 
 - 查询日志: 
+
+### 2.EXPLAIN [参考](<https://www.cnblogs.com/xuanzhi201111/p/4175635.html>)
+
+> 查看SQL语句的执行计划, 使用方式: 添加`EXPLAIN`到需要分析的语句前
+
+- `EXPLAIN`出来的信息有10列，分别是:
+
+  - `id`: SELECT 查询的标识符. 每个 SELECT 都会自动分配一个唯一的标识符.
+
+  - `select_type`: SELECT 查询的类型.
+
+    ```
+    (1) SIMPLE(简单SELECT,不使用UNION或子查询等)
+    (2) PRIMARY(查询中若包含任何复杂的子部分,最外层的select被标记为PRIMARY)
+    (3) UNION(UNION中的第二个或后面的SELECT语句)
+    (4) DEPENDENT UNION(UNION中的第二个或后面的SELECT语句，取决于外面的查询)
+    (5) UNION RESULT(UNION的结果)
+    (6) SUBQUERY(子查询中的第一个SELECT)
+    (7) DEPENDENT SUBQUERY(子查询中的第一个SELECT，取决于外面的查询)
+    (8) DERIVED(派生表的SELECT, FROM子句的子查询)
+    (9) UNCACHEABLE SUBQUERY(一个子查询的结果不能被缓存，必须重新评估外链接的第一行)
+    ```
+
+  - `table` : 查询的是哪个表
+
+  - `partitions` : 匹配的分区
+
+  - `type` : 在表中找到所需行的方式, 又称"访问类型"
+
+    ```
+    ALL：遍历全表以找到匹配的行
+    index: index类型只遍历索引树
+    range:只检索给定范围的行，使用一个索引来选择行
+    ref: 表示上述表的连接匹配条件，即哪些列或常量被用于查找索引列上的值
+    eq_ref: 类似ref，区别就在使用的索引是唯一索引，对于每个索引键值，表中只有一条记录匹配，简单来说，就是多表连接中使用primary key或者 unique key作为关联条件
+    const、system: 当MySQL对查询某部分进行优化，并转换为一个常量时，使用这些类型访问。如将主键置于where列表中，MySQL就能将该查询转换为一个常量,system是const类型的特例，当查询的表只有一行的情况下，使用system
+    NULL: MySQL在优化过程中分解语句，执行时甚至不用访问表或索引，例如从一个索引列里选取最小值可以通过单独索引查找完成。
+    ```
+
+  - `possible_keys`: 此次查询中可能选用的索引
+
+  - `key` : 此次查询中确切使用到的索引.
+
+  - `key_len`: 索引中使用的字节数, 精度满足, 越短越好
+
+  - `ref` : 哪些列或常量被用于查找索引列上的值
+
+  - `rows` : 估算的找到所需的记录所需要读取的行数
+
+  - `filtered` : 表示此查询条件所过滤的数据的百分比
+
+  - `extra` : 额外的信息
 
 ## 10.调优
 
