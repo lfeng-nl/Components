@@ -68,32 +68,33 @@
 
 ### 1.数据库操作
 
-- 创建: `CREATE DATABASE db_name;`
+- 创建: `CREATE DATABASE 数据库名;`
 
 - 查看：`SHOW {DATABASES|SCHEMAS} ` ；
 
-- 修改：`ALTER {DATABASE|SCHEMAS} [db_name] [DEFAULT] CHARACTER SET [=] charset_name;`
+- 修改：`ALTER {DATABASE|SCHEMAS} [数据库名] [DEFAULT] CHARACTER SET [=] charset_name;`
 
-- 删除：`DROP {DATABASE|SCHEMA} [IF EXISTS] db_name;`
+- 删除：`DROP {DATABASE|SCHEMA} [IF EXISTS] 数据库名;`
 
 
-- 使用数据库：`USE database_name;`
+- 使用数据库：`USE 数据库名;`
 
 ### 2.表定义操作
 
-- 创建：`CREATE TABLE table_name(colume_name data_type,...);`
+- 创建：`CREATE TABLE 表名 (字段名1 属性, 字段名2 属性, ...);`
   - 设置主键: `PRIMARY KEY`;
   - 设置非空: `NOT NULL`;
   - 唯一约束: `UNIQUE`;
-  - 设置外键: `FOREIGN KEY (f_key_name) REFERENCES tab_name(colume_name)`;
+  - 设置外键: `CONSTRAINT 外键别名 FOREIGN KEY (字段1, 字段2) REFERENCES 表明(字段名1, 字段名2)`;
   - 设置自增: `AUTO_INCREMENT`;
     - 默认值: `DEFAULT 默认值`;
 - 查看：`SHOW TABLES;`
-- 查看名为`tb_name`的数据表的详细结构：`SHOW COLUMNS FROM tb_name;` | `DESCRIBE tab_name;`或者`EXPLAIN tab_name;`
+  - 查看名为`tb_name`的数据表的详细结构：`SHOW COLUMNS FROM 表名;` | `DESCRIBE 表名;`或者`EXPLAIN 表名;`
+  - 查看建表详细信息: `SHOW CREATE TABLE 表名;`
 - 修改数据表内容：`ALTER TABLE 表名 ...`
-- 重命名: `... RENAME 新表名`
+  - 重命名: `... RENAME 新表名`
   - 修改字段:
-    - 修改字段数据类型和索引: `... MODIFY 属性名 数据类型 约束 类型 [FIRST|AFTER xxx] ;`
+    - 修改字段数据类型和索引: `... MODIFY 属性名 数据类型 约束 类型 [FIRST|AFTER 字段] ;`
     - 修改字段名称: `... CHANGE 旧字段名 新字段名 属性;`
   - 添加字段:
     - 添加：`... ADD 字段名 属性 [FIRST|AFTER col_name]`
@@ -102,66 +103,109 @@
     - `... DROP col_name;`
   - 删除约束:
     - 删除主键约束：`... DROP PRIMARY KEY;`
+    - 删除外键约束: `... DROP FOREIGN KEY 外键别名;`, 未指定外键别名会自动生成,  请查看建表信息`SHOW CREATE TABLE 表名`
   - `DROP`和`ADD`可以混用，用`,`隔开即可；
   - 修改表的存储引擎: `... ENGINE=存储引擎名`
 
-- 删除: `DROP TABLE tab_name`
+- 删除: `DROP TABLE 表名`
 
 ## 3.数据增删改查
 
-### 1.表记录操作
+### 1.数据增删改
 
-- 向数据表中写入记录`INSERT` ：
-  - `INSERT [INTO] tbl_name [(col_name)] {VALUES|VALUE}({expr|DEFAULT},...),(...);`
-  - `INSERT [INTO] tbl_name SET col1_name={expr|DEFAULT},col2_name={expr|DEFAULT}，...;` 每次只能插入一组信息；与第一种的区别：此种方式可以使用子查询； 
-  - `INSERT [INTO] tbl_name [(col_name, ...)] SELECT ...;` 可将查询结果插入到指定数据表中；
+- 插入:
+  - `INSERT [INTO] 表名 VALUES (值1, 值2...),((值1, 值2...))` ：给所有字段插入一组或多组值;
+  - `INSERT [INTO] 表名 (字段1, 字段2) VALUES (值1, 值2...),((值1, 值2...));`: 给字段字段插入一组或多住值;
+  - `INSERT [INTO] 表名 SET 字段1=值1,字段2=值2，...;` 每次只能插入一组信息；与第一种的区别：此种方式可以使用子查询； 
+  - `INSERT [INTO] 表名 (字段1, 字段2...)] SELECT ...;` 可将查询结果插入到指定数据表中；
 - 从文件中加载数据`LOAD DATA INFILE`：
   - `LOAT DATA INFILE '文件路径' INTO TABLE tab_name [LINES TERMINATED BY '\r\n'];`
-- 更新记录`UPDATE` ：
-  - `UPDATE [LOW_PRIORITY] [IGNORE] table_reference SET col_name1={expr1|DEFAULT},...[WHERE where_condition]`
-- 删除记录`DELETE` ：
-  - `DELETE FROM tbl_name [WHERE where_condition];` 
+- 更新：
+  - `UPDATE 表名 SET 字段1=值1, 字段2=值2,...WHERE 条件;`
+- 删除：
+  - `DELETE FROM 表名 WHERE 条件;` 
 
 ### 2.表查找操作
 
-> 查询表达式：每个表达式表示想查找的一列，必须有至少一个；多列之间以英文逗号分隔；
+- 基本查询:
 
-```sql
-SELECT [distinct] select_expr [,select_expr ...]
-[
-  FROM table_references
-  [WHERE where_condition]
-  [GROUP BY {col_name|position}]
-  [HAVING where_condition]
-  [ORDER BY {col_name|expr|position} [ASC|DESC],...]
-  [LIMIT {offset, row_count} | {row_count OFFSET offset}]
-]
-```
+  ```mysql
+  SELECT [DISTINCT] 属性1, ...FROM 表名
+  [
+    [WHERE 条件1]
+    [GROUP BY 属性1 [HAVING 条件2]]
+    [ORDER BY 属性2 [ASC|DESC],...]
+  ]
+  ```
 
-- `[distinct]`: 表示去掉重复, 默认不去除;
-- 记录的查找：`SELECT col1_name，col2_name... FROM tbl_name WHERE 限制;` 显示列将按请求顺序显示 ，可以同时查询多张表的内容；
-- 还可以对显示类名进行==别名==操作：`SELECT col_name AS new_col_name FROM tab_name;`
-- 把一列中相同的项合并：`SELECT DISTINCT col_name FROM tab_name;` 可以用`GROUP BY`实现；
-- `UNION [ALL]` : 将两个查询结果合并为一个，`UNION` 会合并相同项，`UNION ALL` 全部显示，速度要快很多；
-- `WHERE`后跟限制条件，提高查询精度；
-  - 限制条件可以用比较符号，也可用`AND OR`连接多个限制： `age>18 AND age<35`, MySQL 在处理OR操作之前, 优先处理AND操作符号;
-  - `IN` 和 `NOT IN`：`WHERE age NOT IN(26, 27);  WHERE age IN(18);` 括号中为枚举,而不是范围;
-  - `IS NULL` 和 `IS NOT NULL` :
-  - 模式匹配：关键词`LIKE`和通配符一起使用，==`_` :匹配一位，`%` :不定长通配==；例：`WHERE age LIKE ’2_‘`
-  - 也可以使用`NOT LIKE`反向匹配；
-  - 正则表达式：利用关键词`REGEXP ...` , 
-- 查询结果分组`GROUP BY`：`[GROUP BY {col_name|position} [HAVING where_condition], ...];` `；
-  - `GROUP BY` 通常伴随着对领外一些列进行聚合运算, 如sum, avg,max, min等;
-  - `HAVING` ，`WHERE` 关键字无法和聚合函数一起使用, 所以引入`HAVING`; 例如:`...HAVING SUM(xxx)>100`
-- 查询结果排序`ORDER BY` ：默认升序(`ASC`)，降序(`DESC`)，例：`ORDER BY {col_name|position} [ASC|DESC] ，{col_name|positin} [ASC|DESC];` 可以设置多条规则，当前条满足后，对其中相等的再次排序；
-- 限制查询结果返回的数量`LIMIT` ：
-  - `LIMIT {[offset,] row_cout` 即从第`offset`条开始（0开始）返回`row_count`条结果； 
-  - `LIMIT row_count OFFSET offset}`  同上；
-- 内置函数和计算：`COUNT(),SUM(),AVG(),MAX(),MIN();`
+- `WHERE`子句: 
 
-### 3.子查询和连接
+  - 大小比较: `=, <, <=, >, >=, !=`
+  -  集合`IN|NOT IN`:  `... WHERE id IN (1, 5, 10) ;`
+  - 范围`[NOT] BETWEEN AND`:  `... WHERE id BETWEEN 1 and 10;`
+  - 匹配字符`[NOT] LIKE`: `... WHERE name LIKE 'l%';`
+    -  `%`: 任意长度字符串, 长度可以为0;
+    - `_`: 匹配单个字符;
+  - 空值`IS [NOT] NULL`
+  - 多个条件`AND, OR`: `WHERE id=1 OR name='test';`
 
-#### a.子查询
+- 去重`DISTINCT `:  `SELECT DISTINCT name FROM product;`
+
+- 排序`ORDER BY 字段 [ASC|DESC]`: 安照指定字段的升序或降序排序; 
+
+- 别名`... 字段 AS 字段别名 FROM ...;`
+
+- 分组 `GROUP BY` ：
+  - 通常伴随着对另外一些列进行聚合运算, 如`sum, avg, max, min`等;  `SELECT 字段2, max(字段1) from 表名 GROUP BY 字段2;` 
+  - 加条件限制`HAVING` : `...HAVING SUM(xxx)>100`, 注意, `WHERE`用于表和视图, `HAVING`用于分组;
+
+- 限制返回数量`LIMIT` ：
+  - `... LIMIT 数量` : 仅返回指定数量的查询结果； 
+  - `... LIMIT 初始位置 数量` : 返回从指定位置开始的指定数量结果;
+
+- 聚合(集合)函数：`COUNT(),SUM(),AVG(),MAX(),MIN();`
+
+### 3.连接查询和子查询
+
+
+#### 1.连接查询
+
+> 连接查询: 将两个或两个以上的表按某个条件连接, 从中查询数据;
+
+- 连接：`SELECT * FROM 表1 [连接形式] 表2 ON 表1.字段1=表2.字段2 WHERE 条件;`  
+  - 一般用`ON`关键字来设定连接条件，用`WHERE`关键字进行结果及记录的过滤。
+- 连接类型：内连接、左外连接、右外连接；
+  - 内连接`JOIN`: 仅显示符合连接条件的记录，即交集部分；
+  - 左外连接`LEFT JOIN`:从左表那里返回所有的行 ;
+  - 右外连接 `RIGHT JOIN`:从右表那里返回所有的行;
+
+
+- 内连接的两种写法:
+
+  ```sql
+  # 写法1
+  SELECT a.字段1, b.字段2 
+  FROM 表1 AS a, 表2 AS b 
+  WHERE 表1.字段1=表2.字段3;
+   
+  #写法2
+  SELECT a.字段1, b.字段2 
+  FROM 表1 AS a JOIN 表2 AS b 
+  ON 表1.字段1=表2.字段3
+  WHERE 条件;
+  
+  ```
+
+- 多表连接：
+
+  ```SQL
+   SELECT A.xxx, b.xxx 
+   FROM A
+   JOIN (B, C)
+   ON A.xx = B.xx AND|&& B.xx=C.xx
+   WHERE =...
+  ```
+#### 2.子查询
 
 > 子查询（subquery）指出现在其他SQL语句(增删改查)内的SELECT子句，用小括号包围；子查询外层可以是：SELECT、INSERT、UPDATE、SET、或DO；
 
@@ -172,43 +216,6 @@ SELECT [distinct] select_expr [,select_expr ...]
 - 将查询结果写入数据表：`INSERT [INTO] tbl_name [(col_name,..)] SELECT ...`
 - 多表更新：参照另外的表更新本表的记录；`UPDATE table_references SET`
 - `CREATE...SELECT`:创建数据表的同时，将查询结果写入到数据表，
-
-#### b.连接
-
-> 连接：需要从多个表中查询数据,
-
-- 原先查询信息从单个表中查询，使用连接可以==将多个表合并为一张供查询的表==，从而整合多表信息；
-- 语法结构：`A表 连接类型 B表 ON 连接条件 筛选条件` ：`table_reference1 {INNER JOIN| | LEFT JOIN | RIGHT JOIN} table_reference2 ON conditional_expr WHRER ...;` 一般用`ON`关键字来设定连接条件，用`WHERE`关键字进行结果及记录的过滤。
-- 连接类型：内连接、左外连接、右外连接；
-  - 内连接`[INNER JOIN]`: 仅显示符合连接条件的记录，即交集部分；
-  - 左外连接`LEFT JOIN`:从左表那里返回所有的行, 即使右表中没有匹配的行;
-  - 右外连接 `RIGHT JOIN`:从右表那里返回所有的行, 即使左表中没有匹配的行;
-
-
-- 连接查询：在处理多个表时，子查询只能查询显示同一个表中的信息。如果需要多个表中信息，则需要连接（join）操作，基本思想就是把两个表当做一个新的表来操作；例如：
-
-  ```sql
-  SELECT id,name,people_num 
-  FROM emplyee,department 
-  WHERE emplyee.in_dpt=department.dpt_name;
-   
-  #等同于
-  SELECT id,name,people_num 
-  FROM emplyee JOIN department 
-  ON emplyee.in_dpt=department.dpt_name
-  WHERE ...;
-
-  ```
-
-- 多表连接：
-
-  ```SQL
-   SELECT A.xxx, b.xxx 
-   FROM A
-   JOIN (B, C)
-   ON A.xx = B.xx AND/&& B.xx=C.xx
-   WHERE =...
-  ```
 
 ## 4.索引
 
