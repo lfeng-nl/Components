@@ -352,11 +352,12 @@
   - `SHOW CREATE PROCEDURE 存储过程名;`
 
 - 删除
+  
   - `DROP PROCEDURE 存储过程名;`
 
-### 2.cursor 游标
+### 4.cursor 游标
 
-> 游标: 存储在MySQL服务器上的数据库查询, 是语句检索出的结果集. MySQL游标只能用于存储过程(和函数)
+> 游标: 存储在MySQL服务器上的数据库查询, 是语句检索出的结果集.  MySQL游标只能用于存储过程(和函数)
 
 - ```sql
   -- 存储过程(或函数)内
@@ -364,35 +365,39 @@
   	-- 声明变量 o 
   	DECLARE o INT;
   	-- 声明游标 ordernumbers
-  	DECLARE ordernumbers CURSOR
+  	DECLARE 游标名 CURSOR
   	FOR
   	SELECT order_num FROM orders;
   	-- 打开游标
-  	OPEN ordernumbers;
+  	OPEN 游标名;
   	-- 获取值
-  	FETCH ordernumbers INTO o;
+  	FETCH 游标名 INTO o;
   	-- 关闭游标
-  	CLOSE ordernumbers;
+  	CLOSE 游标名;
   END;
   ```
-### 3.运算符和函数
+### 5.事务
+
+> 用来维护数据库的完整性, 保证成批MySQL要么完全执行, 要么完全不执行;
+
+- 术语
+    - 事务(transaction): 一组SQL语句;
+    - 回退(rollback): 撤销指定SQL语句的过程;
+    - 提交(commit): 将未存储的SQL语句结果写入数据表;
+    - 保留点(savepoint): 事务处理中临时占位符, 可以对它发布回退;
+- 控制事务:
+    - `START TRANSACTION;`: 标识事务开始;
+    - `ROLLBACK;` 回退事务;
+    - `COMMIT`: 提交;
+- 更改默认提交行为
+    - `SET autocommit=0`: 不自动提交(默认自动提交, 每执行一条SQL, 立刻生效); 标志针对每个连接;
+
+### 6.运算符和函数
 
 #### 1.字符函数
 
 - `CONCAT()` :用于字符连接，可以连接多个字符串，`CONCAT('lfeng', 'hqh', 'xiaoxi');`
 - `CONCTA_WS()` ：用指定分隔符(可以为字符串)连接，第一个参数为分隔符，`CONCAT_WS('---', 'lfeng', 'hou');`
-- `FORMAT()`：数字格式化千分位，第二个参数指定小数点后的位数；`FORMAT(1235.12312, 2);`
-- `LOWER()` :字符串转为小写；`LOWER('MySQL');`
-- `UPPER()` :字符串转为大写；`LOWER('MySQL');`
-- `LEFT()` ：从字符串的左测获取指定数目的字符；`LEFT('MySQL', 2);`
-- `RIGHT()`：从字符串的右侧获取指定数目的字符；`RIGHT('MySQL', 3);`
-- `LENGTH()`：获取字符串的长度；`LENGTH('lfeng');`
-- `LTRIM()` ：删除字符串前导空格（首字母前的空格）；
-- `RITIM()`  ：删除字符串后导空格（后续空格）；
-- `TRIM()` ：删除前导和后导空格；
-- `SUBSTRING()` :进行字符串截取；从第几位开始，截取n位，`SUBSTRING（'MySQL', 1, 2）--> 'My'`
-- `REPLACE()` ：替换，将字符串中的`A`替换为`B`；`REPLACE('???My??SQL??', '??', ''); -->'?MySQL'`,
-- `[NOT] LINE` ：
 
 #### 2.数值运算符与函数
 
@@ -410,7 +415,7 @@
 
 #### 4.聚合函数
 
-只有一个返回值
+>  只有一个返回值
 
 - `AVG()` ：平均值；
 - `COUNT()` ：计数，`COUNT(*)` ：返回被选行数；
@@ -428,13 +433,7 @@
 - `NOW()` ：当前日期和时间；
 - `CURDATE()` ：当前日期；
 - `CURTIME()` ：当前时间；
-## 7.备份还原
-
-
-
-
-
-## 8.安全
+## 6.安全
 
 ### 1.权限管理
 
@@ -446,23 +445,55 @@
   - `REVOKE priv_type ON databases.table FROM user;`
 - 查看权限
   - `SHOW GRANTS FOR user;`
-- SQL注入简介：利用某些数据库的外部接口把==用户数据==插入到实际的数据库==操作语言==中，从而达到入侵数据库乃至操作系统的目的。产生主要是由于程序对用户输入的数据没有进行严格的过滤，导致非法数据库查询语句的执行；
-- 
 
+### 2.备份恢复
 
-## 9.调试和维护
+> 逻辑备份: 将数据包含在一种MySQL能够解析的格式中(SQL或格式文本)
+>
+> 物理备份: 直接复制原始文件, 通常简单高效, 但是也有文件大(包含索引信息), 文件系统格式限制等问题;
+
+- 文件系统快照: 
+
+## 7.调试和维护
 
 ### 1.日志
 
-> 错误日志: 记录MySQL服务端在运行时产生的错误信息
+> 错误日志: 记录MySQL服务端在运行时产生的错误信息, 
 >
-> 查询日志: 记录建立的客户端连接和执行语句;
+> 查询日志: 记录所有MySQL活动;
 >
 > 慢查询日志: 慢查询时间阈值, 以秒为单位, 超过这个阈值就是慢查询;
 >
-> binlog二进制日志: 对数据库进行增删改的SQL操作, 可以用这个日志做增量备份;
+> 二进制日志: 记录更新过数据的所有语句, 可以用这个日志做增量备份;
 
-- 查询日志: 
+- 日志配置:
+
+    ```ini
+    # 错误日志 #
+    log_error=/exdata1/logs/mysql/mysqld.log
+    # 日志等级, 可选1,error, 2,warn, 3, note
+    log_error_verbosity=3
+    
+    # 查询日志 #
+    # 是否开启
+    general_log=ON
+    general_log_file=/exdata1/logs/mysql/mysql-general.log
+    
+    # 慢查询日志 #
+    slow_query_log=ON
+    slow_query_log_file=/exdata1/logs/mysql/mysql-slow.log
+    # 阈值, 单位s
+    long_query_time=1
+    # 捕获所有未使用索引的SQL
+    log_queries_not_using_indexes=ON
+    # 限制未索引查询数量, 0无限制
+    log_throttle_queries_not_using_indexes=100
+    # 捕获管理类的SQL,(修改表, 创建索引,...)
+    log_slow_admin_statements=ON
+    #min_examined_row_limit=100000
+    ```
+
+    
 
 ### 2.EXPLAIN [参考](<https://www.cnblogs.com/xuanzhi201111/p/4175635.html>)
 
@@ -516,5 +547,13 @@
 
   - `extra` : 额外的信息
 
-## 10.调优
+## 9.调优
+
+### 1.MySQL测调优
+
+- 使用`EXPLAIN`查看如何执行SELECT语句;
+- 一般存储过程比单条执行快速;
+- 不检索不需要的数据;
+
+### 2.应用测调优
 
