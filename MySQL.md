@@ -335,22 +335,24 @@
 - 优缺点:
   - 优点: 效率高, 简化操作, 安全性好;
   - 缺点: 更新迭代麻烦, 不利于分库分表, 业务扩展后无法使用, 跟组件或ORM库无法兼容;
+  
+- 创建存储过程
 
-```sql
--- 创建名为 productpricing 的存储过程
-CREATE PROCEDURE productpricing()
-BEGIN
-	SELECT Avg(prod_price) AS priceaverage
-	FROM products;
-END;
--- 调用名为 productpricing 的存储过程, 
-CALL productpricing();
+  ```mysql
+  CREATE PROCEDURE 存储过程名称(输入输出参数列表)
+  BEGIN
+  	sql代码
+  END
+  ```
 
--- 存储过程也可使用参数
+- 调用存储过程: `CALL 存储过程名称;`
 
--- 删除存储过程
-DROP PROCEDURE productpricing IF EXISTS;
-```
+- 查看:
+  -  `SHOW PROCEDURE STATUS LIKE '存储过程名匹配';`
+  - `SHOW CREATE PROCEDURE 存储过程名;`
+
+- 删除
+  - `DROP PROCEDURE 存储过程名;`
 
 ### 2.cursor 游标
 
