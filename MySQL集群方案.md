@@ -2,11 +2,11 @@
 
 -   MGR: MySQL Group Replication, MySQL官方于2016年12月推出的一个全新的高可用于高扩展解决方案, 5.7以上版本支持;
 -   PXC
--   MHA: Master High Availability, 
+-   MHA: Master High Availability,  一个MySQL高可用性环境下故障切换和主从提升的高可用软件, MHA只负责MySQL主库的高可用. 主库故障时, MHA会选择一个候选主节点作为新的主节点. 
 
 ## 2.MGR 
 
->   参考: [MySQL集群MGR架构]([https://www.93bok.com/MySQL%E9%9B%86%E7%BE%A4MGR%E6%9E%B6%E6%9E%84for%E5%8D%95%E4%B8%BB%E6%A8%A1%E5%BC%8F/](https://www.93bok.com/MySQL集群MGR架构for单主模式/)), [MySQL组复制](<http://mysqlhighavailability.com/mysql-group-replication-a-quick-start-guide/>), [MySQL Group Replication解析](<https://bbs.huaweicloud.com/blogs/115356>)
+>   参考: [MySQL集群MGR架构]([https://www.93bok.com/MySQL%E9%9B%86%E7%BE%A4MGR%E6%9E%B6%E6%9E%84for%E5%8D%95%E4%B8%BB%E6%A8%A1%E5%BC%8F/](https://www.93bok.com/MySQL集群MGR架构for单主模式/)), [MySQL组复制](https://dev.mysql.com/doc/refman/5.7/en/group-replication.html), [MySQL Group Replication解析](<https://bbs.huaweicloud.com/blogs/115356>)
 
 ### 1.概述
 
@@ -85,3 +85,45 @@
     ```
 
     
+
+## 3.PXC
+
+## 4.MHA
+
+> 相对成熟的MySQL集群方案, MHA完成主切换后, 通过VIP漂移或zk注册, 完成主节点切换;
+>
+> 参考: [美团数据库高可用架构演进与设想](https://tech.meituan.com/2017/06/29/database-availability-architecture.html), [wiki](https://github.com/yoshinorim/mha4mysql-manager/wiki/Overview), [MySQL高可用架构之MHA](https://www.cnblogs.com/gomysql/p/3675429.html)
+
+## 5.集群相关底层技术
+
+### 1.Binlog
+
+> 记录所有的`DDL`和`DML`语句(除了查询select, show等)
+>
+> 使用场景: MySQL主从复制, 数据恢复;
+
+- 开启二进制日志
+
+  ```ini
+  [mysqld]
+  log-bin=binlogname                    # 会开启二进制日志并存储为 binlogname.00000x 文件
+  ```
+
+- 相关变量
+
+  - `log_bin`: 是否开启二进制日志
+  - `log_bin_basename`:  日志路径
+  - `log_bin_index`:  索引路径
+  - `binlog_format`:  日志格式
+
+- 格式:
+
+  - `ROW`: 记录修改的详细信息
+  - `Statement`: 记录具体执行的sql语句;
+  - 
+
+- 读取二进制文件:
+
+  
+
+  

@@ -605,13 +605,22 @@
 #### 1.慢查询日志
 
 -   通过配置开启慢查询日志;
+-   慢查询相关配置:
+
+  - `slow_query_log`: 是否开启, `ON/OFF`;
+
+  - `slow_query_log_file`: 日志路径;
+
+  - `log_queries_not_using_indexes`: 记录无索引查询, `ON/OFF`;
+
+  - `long_query_time`: 慢查询时间阈值;
 -   通过`mysqldumpslow`工具, 分析慢查询日志, 找到具体需要优化的sql语句;
 -   通过`EXPLAIN`语句, 分析具体执行计划, 优化sql语句;
 
 #### 2.索引建立
 
 -   在where从句, group by从句, order by从句, on从句中出现的列;
--   
+
 
 #### 2.使用及表结构上的优化
 
@@ -628,7 +637,6 @@
 ### 5.应用侧调优
 
 - 使用缓存
-- 
 
 ## 9.技巧
 
