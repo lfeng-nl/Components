@@ -68,13 +68,12 @@
   - `BLOB`: 存储的是二进制数据, 没有排序规则或字符集;
   - `TEXT`: 存储的是字符
 
-## 2.库和表操作
+### 6.MySQL帮助文档
 
-> 帮助使用：
->
-> - 按层次看帮助：`mysql>? contents` 会按分类列出项，然后可以再选择感兴趣的方向
->
-> - 直接快速查询：`mysql>? show`
+- `? xxx;`: 查询`xxx`的命令说明.
+  - 例如: `? CREATE DATABASE;`
+
+## 2.库和表操作
 
 ### 1.数据库操作
 
@@ -93,6 +92,8 @@
 
 ### 2.表定义操作
 
+> 创建表时长用的约束:
+>
 > PRIMARY KEY: 唯一约束, NOT NULL 约束, 主键必须包含且唯一, 自动创建唯一索引;
 >
 > UNIQUE KEY: 唯一约束, 自动创建唯一索引;
@@ -101,18 +102,28 @@
 >
 > **以上三种 KEY, 都有约束和索引双层含义**
 
-- 创建：`CREATE TABLE 表名 (字段名1 属性, 字段名2 属性, ...);`
-  - 设置主键: `PRIMARY KEY`;
-  - 唯一约束: `UNIQUE`;
-  - 设置外键: `CONSTRAINT 外键别名 FOREIGN KEY (字段1, 字段2) REFERENCES 表明(字段名1, 字段名2)`;
-  - 设置非空: `NOT NULL`;
-  - 设置自增: `AUTO_INCREMENT`, 自增类必须建立索引;
-  - 默认值: `DEFAULT 默认值`;
+- 创建表：`CREATE TABLE 表名 (字段名1 类型 [修饰], 字段名2 类型, ..., [索引 | 约束]) [表选项];`
+  - 修饰:
+    - `NOT NULL`: 非空约束
+    - `DEFAULT`: 默认值
+    - `AUTO_INCREMENT`: 自增(设置自增, 必须对该列设置索引)
+    - `UNIQUE`: 唯一
+    - `PRIMARY KEY`: 主键
+    - `COMMENT`: 注释
+  - 索引:
+    - 全文, index
+    - `INDEX|KEY 索引名 (列1, 列2)`
+    - `FULLTEXT KEY 索引名 (列1)`
+  - 约束:
+    - `PRIMARY KEY (列)`: 主键约束(非空, 唯一, )
+    - `UNIQUE (列)`
+    - `FOREIGN KEY (列)`
+
 - 查看：`SHOW TABLES;`
   - 查看名为`tb_name`的数据表的详细结构：`SHOW COLUMNS FROM 表名;` | `DESCRIBE 表名;`或者`EXPLAIN 表名;`
   - 查看建表详细信息: `SHOW CREATE TABLE 表名;`
-- 修改数据表内容：`ALTER TABLE 表名 ...`
 
+- 修改数据表内容：`ALTER TABLE 表名 ...`
   - 重命名: `... RENAME 新表名`
   - 修改字段:
     - 修改字段数据类型和索引: `... MODIFY 属性名 数据类型 约束 类型 [FIRST|AFTER 字段] ;`
