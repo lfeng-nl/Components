@@ -24,17 +24,14 @@
 ### 3.服务端启动和配置
 
 - `mysqld_safe --defaults-file=xxxx --datadir=xxx --pid-file=xxx`
-
   - `defaults-file`: 指定配置文件.
   - `datadir`: 指定数据存放路径
 
 - `mysqld_save` 和 `mysqld`:
-
   - `mysqld_save`: 脚本文件, 负责启动`mysqld`并监控 mysql 的运行.
   - `mysqld`: 二进制文件, mysql 服务执行程序.
 
 - 系统变量: 影响服务运行的一系列变量, 由默认值和配置文件决定.
-
   - 系统变量信息可以通过:`SHOW [GLOBAL|SESSION] VARIABLES LIKE 'default_storage_engine'` 查询.
   - **对于大部分系统变量来说，它们的值可以在服务器程序运行过程中进行动态修改而无需停止并重启服务器**
   - 系统变量具有作用域:
@@ -67,6 +64,12 @@
   - `CHAR`: 定长, 对于经常变更的数据也不容易产生碎片; 存储空间上比`VARCHAR`更有效率;
   - `BLOB`: 存储的是二进制数据, 没有排序规则或字符集;
   - `TEXT`: 存储的是字符
+
+- 数据库设计需要考虑的点:
+  - 使用`tinyint`代替枚举. 枚举的排序效率低, 扩展性不强.
+  - 货币类使用`int`或`decimal`, 避免使用`float`和`double`.
+  - 时间类型: 更加项目自身需求选择, `varchar, timestamp, datetime`等.
+  - 文件类型: 一般mysql中仅存储文件名和路径, 文件内存使用`HDFS(Hadoop分布式文件系统)`存储.
 
 ### 6.MySQL帮助文档
 
@@ -102,22 +105,20 @@
 >
 > **以上三种 KEY, 都有约束和索引双层含义**
 
-- 创建表：`CREATE TABLE 表名 (字段名1 类型 [修饰], 字段名2 类型, ..., [索引 | 约束]) [表选项];`
+- 创建表：`CREATE TABLE 表名 (字段名1 类型 [修饰], 字段名2 类型, ..., [索引]) [表选项];` [参考](https://dev.mysql.com/doc/refman/5.7/en/create-table.html)
   - 修饰:
     - `NOT NULL`: 非空约束
-    - `DEFAULT`: 默认值
+    - `DEFAULT default_value`: 默认值
     - `AUTO_INCREMENT`: 自增(设置自增, 必须对该列设置索引)
-    - `UNIQUE`: 唯一
+    - `UNIQUE`: 唯一约束(自动创建索引)
     - `PRIMARY KEY`: 主键
-    - `COMMENT`: 注释
+    - `COMMENT '注释信息'`: 注释
+
   - 索引:
-    - 全文, index
-    - `INDEX|KEY 索引名 (列1, 列2)`
-    - `FULLTEXT KEY 索引名 (列1)`
-  - 约束:
-    - `PRIMARY KEY (列)`: 主键约束(非空, 唯一, )
-    - `UNIQUE (列)`
-    - `FOREIGN KEY (列)`
+    - `PRIMARY KEY (列1, 列2)`: 主键, 默认添加唯一约束, 不能设置索引名称.
+    - `KEY | INDEX 索引名 (列1, 列2)`: 普通索引.
+    - `FULLTEXT KEY 索引名 (列1)`: 全文索引, 用于全文搜索特殊类型的索引.
+    - `UNIQUE 索引名 (列1, 列2)`: 唯一索引.
 
 - 查看：`SHOW TABLES;`
   - 查看名为`tb_name`的数据表的详细结构：`SHOW COLUMNS FROM 表名;` | `DESCRIBE 表名;`或者`EXPLAIN 表名;`
