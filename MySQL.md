@@ -24,14 +24,17 @@
 ### 3.服务端启动和配置
 
 - `mysqld_safe --defaults-file=xxxx --datadir=xxx --pid-file=xxx`
+
   - `defaults-file`: 指定配置文件.
   - `datadir`: 指定数据存放路径
 
 - `mysqld_save` 和 `mysqld`:
+
   - `mysqld_save`: 脚本文件, 负责启动`mysqld`并监控 mysql 的运行.
   - `mysqld`: 二进制文件, mysql 服务执行程序.
 
 - 系统变量: 影响服务运行的一系列变量, 由默认值和配置文件决定.
+
   - 系统变量信息可以通过:`SHOW [GLOBAL|SESSION] VARIABLES LIKE 'default_storage_engine'` 查询.
   - **对于大部分系统变量来说，它们的值可以在服务器程序运行过程中进行动态修改而无需停止并重启服务器**
   - 系统变量具有作用域:
@@ -60,6 +63,7 @@
 - 尽量避免 NULL, MySQL 难以优化包含 NULL 的列;
 
 - 常用数据类型: `INT, FLOAT, DOUBLE, DATA, TIME, CHAR, VARCHAR, TEXT...`
+
   - `VARCHAR`: 可变长字符串, 适用于列的最大长度比平均长度大很多, 列的更新很少的数据; 频繁更新会导致碎片化;
   - `CHAR`: 定长, 对于经常变更的数据也不容易产生碎片; 存储空间上比`VARCHAR`更有效率;
   - `BLOB`: 存储的是二进制数据, 没有排序规则或字符集;
@@ -69,9 +73,9 @@
   - 使用`tinyint`代替枚举. 枚举的排序效率低, 扩展性不强.
   - 货币类使用`int`或`decimal`, 避免使用`float`和`double`.
   - 时间类型: 更加项目自身需求选择, `varchar, timestamp, datetime`等.
-  - 文件类型: 一般mysql中仅存储文件名和路径, 文件内存使用`HDFS(Hadoop分布式文件系统)`存储.
+  - 文件类型: 一般 mysql 中仅存储文件名和路径, 文件内存使用`HDFS(Hadoop分布式文件系统)`存储.
 
-### 6.MySQL帮助文档
+### 6.MySQL 帮助文档
 
 - `? xxx;`: 查询`xxx`的命令说明.
   - 例如: `? CREATE DATABASE;`
@@ -106,7 +110,9 @@
 > **以上三种 KEY, 都有约束和索引双层含义**
 
 - 创建表：`CREATE TABLE 表名 (字段名1 类型 [修饰], 字段名2 类型, ..., [索引]) [表选项];` [参考](https://dev.mysql.com/doc/refman/5.7/en/create-table.html)
+
   - 修饰:
+
     - `NOT NULL`: 非空约束
     - `DEFAULT default_value`: 默认值
     - `AUTO_INCREMENT`: 自增(设置自增, 必须对该列设置索引)
@@ -121,10 +127,12 @@
     - `UNIQUE 索引名 (列1, 列2)`: 唯一索引.
 
 - 查看：`SHOW TABLES;`
+
   - 查看名为`tb_name`的数据表的详细结构：`SHOW COLUMNS FROM 表名;` | `DESCRIBE 表名;`或者`EXPLAIN 表名;`
   - 查看建表详细信息: `SHOW CREATE TABLE 表名;`
 
 - 修改数据表内容：`ALTER TABLE 表名 ...`
+
   - 重命名: `... RENAME 新表名`
   - 修改字段:
     - 修改字段数据类型和索引: `... MODIFY 属性名 数据类型 约束 类型 [FIRST|AFTER 字段] ;`
@@ -163,15 +171,26 @@
 - 基本查询:
 
   ```mysql
-  SELECT [DISTINCT] 属性1, ...FROM 表名
-  [
-    [WHERE 条件1]
-    [GROUP BY 属性1 [HAVING 条件2]]
-    [ORDER BY 属性2 [ASC|DESC],...]
-  ]
+  SELECT
+    [DISTINCT]
+    检索列1 [, 检索列2] ...
+    [FROM 表
+      [PARTITION partition_list]]
+    [WHERE where_condition]
+    [GROUP BY {col_name | expr | position}
+      [ASC | DESC], ... [WITH ROLLUP]]
+    [HAVING where_condition]
+    [ORDER BY {col_name | expr | position}
+      [ASC | DESC], ...]
+    [LIMIT {[offset,] row_count | row_count OFFSET offset}]
+    [FOR UPDATE | LOCK IN SHARE MODE]
   ```
 
-- `WHERE`子句:
+- `DISTINCT`:
+
+  - 返回结果删除重复行.
+
+- `WHERE`: 条件过滤
 
   - 大小比较: `=, <, <=, >, >=, !=`
   - 集合`IN|NOT IN`: `... WHERE id IN (1, 5, 10) ;`
@@ -182,18 +201,24 @@
   - 空值`IS [NOT] NULL`
   - 多个条件`AND, OR`: `WHERE id=1 OR name='test';`
 
-- 去重`DISTINCT`: `SELECT DISTINCT name FROM product;`
+- `GROUP BY`：分组
 
-- 排序`ORDER BY 字段 [ASC|DESC]`: 安照指定字段的升序或降序排序;
+  - 单独使用意义不大, 通常伴随聚合函数使用.
+  - `SELECT 字段2, max(字段1) from 表名 GROUP BY 字段2;`
+  - 通过`HAVING`对分组后的数据进行过滤.
+  - `... GROUP BY xxx HAVING xxxx`.
 
-- 别名`... 字段 AS 字段别名 FROM ...;`
+- `HAVING 和 WHERE`:
 
-- 分组 `GROUP BY` ：
+  - `HAVING`是对分组后对数据进行过滤
+  - `WHERE`是对分组前对数据进行过滤
 
-  - 通常伴随着对另外一些列进行聚合运算, 如`sum, avg, max, min`等; `SELECT 字段2, max(字段1) from 表名 GROUP BY 字段2;`
-  - 加条件限制`HAVING` : `...HAVING SUM(xxx)>100`, 注意, `WHERE`用于表和视图, `HAVING`用于分组;
+- `ORDER BY`:排序
 
-- 限制返回数量`LIMIT` ：
+  - `ACS`: 升序
+  - `DESC`: 降序
+
+- `LIMIT`: 限制返回数量
 
   - `... LIMIT 数量` : 仅返回指定数量的查询结果；
   - `... LIMIT 初始位置 数量` : 返回从指定位置开始的指定数量结果;
@@ -204,15 +229,19 @@
 
 #### 1.连接查询
 
-> 连接查询: 将两个或两个以上的表按某个条件连接, 从中查询数据;
+> 连接查询: 将两个或两个以上的表按某个条件连接, 从中查询数据.
+>
+> 根据连接形式不同, 分为**内连接, 左外连接, 右外连接**.
 
 - 连接：`SELECT * FROM 表1 [连接形式] 表2 ON 表1.字段1=表2.字段2 WHERE 条件;`
+
   - 一般用`ON`关键字来设定连接条件，用`WHERE`关键字进行结果及记录的过滤。
+
 - 连接类型：内连接、左外连接、右外连接；
 
   - 内连接`JOIN`: 仅显示符合连接条件的记录，即交集部分；
-  - 左外连接`LEFT JOIN`:从左表那里返回所有的行 ;
-  - 右外连接 `RIGHT JOIN`:从右表那里返回所有的行;
+  - 左外连接`LEFT JOIN`: 左表的记录将会全部表示出来，右表记录不足的地方均为NULL.
+  - 右外连接 `RIGHT JOIN`: 右表的记录将会全部表示出来，左表记录不足的地方均为NULL.
 
 - 内连接的两种写法:
 
@@ -230,7 +259,7 @@
 
   ```
 
-* 多表连接：
+- 多表连接：
 
   ```SQL
    SELECT A.xxx, b.xxx
@@ -242,25 +271,28 @@
 
 #### 2.子查询
 
-> 出现在其他 SQL 语句(增删改查)内的`SELECT`子句，用小括号包围；内层查询语句为外层查询语句提供查询条件.
+> 出现在其他 SQL 语句(增删改查)内的`SELECT`子句，用小括号包围；
+>
+> 内层查询语句为外层语句提供过滤条件.
+>
+> **子查询 1.执行过程可能并不是由内向外执行. 2.存在临时表的创建和销毁. 子查询通常存在严重的效率问题.应尽量避免使用, 或使用`EXPLAIN`分析**
 
 - 带`IN`关键字子查询:
+
   - `... WHERE 字段1 IN (SELECT 字段2 FROM 表名);`
+
+- 带`EXISTS`关键字子查询:
+
+  - 如果内层查询到结果, 返回为`true`, 反之为`yes`;
+
 - 带比较运算符的子查询, `=, !=, >, >=, <, <=`:
   - `... WHERE 字段1 >= (SELECT 字段1 FROM 表名 WHERE 条件);`
-- 带`EXISTS`关键字子查询:
-  - 如果内层查询到结果, 返回为`true`, 反之为`yes`;
-- 带`ANY`关键字子查询:
-  - 只要满足内层查询语句返回结果中的任何一个;
-  - `.... WHERE 字段1 >= ANY (SELECT 字段2 FROM 表名);`
-- 带`ALL`关键字子查询:
-
-  - 需要满足内层查询的所有结果;
-  - `... WHERE 字段1 >= ALL (SELECT 字段2 FROM 表名);`
-
-- _子查询的性能问题_
-  - 子查询通常不会像我们认为的那样, 由内到外执行, 性能上会有很大的问题;
-  - 尽量避免使用子查询;
+  - 带`ANY`关键字子查询:
+    - 只要满足内层查询语句返回结果中的任何一个;
+    - `.... WHERE 字段1 >= ANY (SELECT 字段2 FROM 表名);`
+  - 带`ALL`关键字子查询:
+    - 需要满足内层查询的所有结果;
+    - `... WHERE 字段1 >= ALL (SELECT 字段2 FROM 表名);`
 
 ### 4.合并查询结果
 
