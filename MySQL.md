@@ -361,59 +361,7 @@
 
 - 覆盖索引: 索引的叶子节点已包含所有要查询的列，因此不需要访问表数据.
 
-## 5.事务
-
-### 1.ACID 特性
-
-### 2.事务的概念和实现原理
-
-> 我们说的事务, 本质上只是一系列数据库操作. 只是这些数据操作符合`ACID`特性.
->
-> `InnoDB`通过`Redo log`实现持久性(`D`), 通过`Undo log`实现 `AC`, 通过**锁**实现隔离性(`I`)
-
-- `Redo log`: 用来实现事务的持久性.
-
-  - 当遇突发故障时, 已提交但未写入磁盘的数据可以恢复.
-  - 如果需要持久性, 在事务提交后, 需要将内存中的修改刷新到磁盘(`fsync`), 但是存在刷新速度慢等问题.
-  - 通过`redo log`记录事务提交修改, 只将`redo log`刷新到磁盘, 系统启动后, 通过`redo log`一样可以恢复数据, 这样就保证了持久性.
-  - `redo log`占用空间小, 本身是顺序写入磁盘的, 这样, 刷新到磁盘的效率就很高.
-
-- `Undo log`: 用来实现 1.回滚, 2.MVCC
-
-  - 如果因某些原因导致事务失败需要回滚, 可以借助`Undo log`进行回滚.
-  - `Undo log`相当于记录事务查找的反操作.
-  - `MVCC`: 多版本并发控制.
-    - 通过同一份数据临时保留多个版本, 进而实现并发控制.
-
-- 事务的状态
-
-![事务状态](./image/Transaction.jpg)
-
-### 3.事务隔离级别 transaction isolation levels
-
-### 4.事务控制语句
-
-- `autocommit`: 自动提交模式, 除非显式开启事务, 否则条 SQL 语句, MySQL 都会立刻提交.
-
-  - 可以通过`SET autocommit=0/1` 开启或关闭.
-  - 可以通过`SHOW VARIABLES LIKE 'autocommit'`查看当前设置.
-  - 关闭自动提交后, 提交数据需要执行`COMMIT`;
-  - **autocommit 配置是针对连接而不是服务器**.
-
-- 显式的事务控制:
-
-  - `START TRANSACTION / BEGIN`: 开始一个事务
-  - `ROLLBACK;` 回退事务;
-  - `COMMIT`: 提交;
-  - `SAVEPOINT IDENTIFIER`: 保存点
-  - `ROLLBACK TO []`: 回滚
-
-- 隔离级别
-  - 通过`SHOW VARIABLES LIKE "transaction_isolation"`查看事务隔离级别.
-  - `SET transaction_isolation="REPEATABLE-READ"`: 修改隔离级别.
-
-
-## 7.特殊主题
+## 5.特殊主题
 
 ### 1.视图
 
@@ -540,7 +488,7 @@
 - `CURDATE()` ：当前日期；
 - `CURTIME()` ：当前时间；
 
-## 8.维护
+## 6.维护
 
 ### 1.权限管理
 
@@ -623,7 +571,7 @@
 
 - 二进制日志查看: `mysqlbinlog filename.number`
 
-## 9.MySQL 优化
+## 7.MySQL 优化
 
 ### 1.EXPLAIN [参考](https://www.cnblogs.com/xuanzhi201111/p/4175635.html)
 
