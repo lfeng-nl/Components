@@ -15,6 +15,19 @@
 
 ![MySQL](./image/mysql.jpg)
 
+![MySQL](./image/mysql.png)
+
+### 2.连接器
+
+- MySQL在执行过程中临时使用的内存是管理在连接对象里, 这些资源会在连接断开或者是执行`mysql_reset_connection`时释放.
+- 可以通过`show processlist`查询连接情况.
+
+### 3.优化器
+
+> 如存在多个索引时, 使用哪个索引, 有多表并联(join)时, 决定各个表的连接顺序.
+
+- 
+
 ### 2.常用的存储引擎
 
 - `InnoDB`: 具备外键, 支持事务和部分事务回滚(Savepoints), 支持分布式事务(XA)
