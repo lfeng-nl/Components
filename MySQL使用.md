@@ -1,66 +1,10 @@
 # MySQL
 
-## 1.MySQL 服务端架构及基础概念
-
-### 1.服务端架构
-
-- 客户端通过 TCP, UNIX 域套接字等方式连接到 MySQL 服务器.
-
-- 客户端进程向服务端进程发送一段文本(SQL 语句), 服务器进程处理后再向客户端进程发送一段文本(处理结果);
-
-- 服务端处理可以分为三部分:
-  - 连接管理: MySQL 服务器会为每一个连接进来的客户端分配一个线程;
-  - sql 语句解析优化: 包括语法解析(编译), 查询优化(外连接转换为内连接、表达式简化、子查询转为连接);
-  - 存储引擎: 对数据的存储和提取操作的封装;
-
-![MySQL](./image/mysql.jpg)
+## 1.MySQL 基础
 
 ![MySQL](./image/mysql.png)
 
-### 2.连接器
-
-- MySQL在执行过程中临时使用的内存是管理在连接对象里, 这些资源会在连接断开或者是执行`mysql_reset_connection`时释放.
-- 可以通过`show processlist`查询连接情况.
-
-### 3.优化器
-
-> 如存在多个索引时, 使用哪个索引, 有多表并联(join)时, 决定各个表的连接顺序.
-
-- 
-
-### 2.常用的存储引擎
-
-- `InnoDB`: 具备外键, 支持事务和部分事务回滚(Savepoints), 支持分布式事务(XA)
-- `MyISAM`: 占用空间小, 处理速度快, 但不支持事务完整性和并发;
-  - 频繁执行全表 count 的场景.
-- `Memory`: 存储于内存中, 默认使用哈希索引, 速度快.
-
-### 3.服务端启动和配置
-
-- `mysqld_safe --defaults-file=xxxx --datadir=xxx --pid-file=xxx`
-
-  - `defaults-file`: 指定配置文件.
-  - `datadir`: 指定数据存放路径
-
-- `mysqld_save` 和 `mysqld`:
-
-  - `mysqld_save`: 脚本文件, 负责启动`mysqld`并监控 mysql 的运行.
-  - `mysqld`: 二进制文件, mysql 服务执行程序.
-
-- 系统变量: 影响服务运行的一系列变量, 由默认值和配置文件决定.
-
-  - 系统变量信息可以通过:`SHOW [GLOBAL|SESSION] VARIABLES LIKE 'default_storage_engine'` 查询.
-  - **对于大部分系统变量来说，它们的值可以在服务器程序运行过程中进行动态修改而无需停止并重启服务器**
-  - 系统变量具有作用域:
-    - `GLOBAL`: 全局变量, 影响服务器的整体操作.
-    - `SESSION`: 会话变量, 影响客户端的连接.
-  - 设置系统变量: `SET [GLOBAL|SESSION] 系统变量名=值`.
-
-- 状态变量: 记录服务器运行状态.
-  - 状态变量也有`GLOBAL, SESSION`两个作用域.
-  - 查看: `SHOW [GLOBAL|SESSION] STATUS [LIKE 匹配的模式];`
-
-### 4.字符编码
+### 1.字符编码
 
 > 编码 encode: 将字符映射成一个二进制数据的过程.
 >
@@ -70,7 +14,7 @@
 - 常用字符编码:
   - `utf8bm4`: 正宗`utf-8`编码,
 
-### 5.数据类型
+### 2.数据类型
 
 - 存储数据最小的数据类型通常更好, 但要确保没有低估需要存储的值的范围;
 - 简单更好; 简单数据类型通常需要更少的 CPU 周期;
@@ -89,7 +33,7 @@
   - 时间类型: 更加项目自身需求选择, `varchar, timestamp, datetime`等.
   - 文件类型: 一般 mysql 中仅存储文件名和路径, 文件内存使用`HDFS(Hadoop分布式文件系统)`存储.
 
-### 6.MySQL 帮助文档
+### 3.MySQL 帮助文档
 
 - `? xxx;`: 查询`xxx`的命令说明.
   - 例如: `? CREATE DATABASE;`
@@ -232,7 +176,7 @@
 
 - `ORDER BY`:排序
 
-  - `ACS`: 升序
+  - `ACS`: 升序 默认.
   - `DESC`: 降序
 
 - `LIMIT`: 限制返回数量
@@ -381,6 +325,10 @@
 
 ### 4.运算符和函数
 
+> `SELECT DATABASE();`: 当前使用数据库;
+>
+> `SELECT NOW(), USER(), VERSION();`: 时间, 用户, 版本;
+
 #### 1.字符函数
 
 - `CONCAT()` :用于字符连接，可以连接多个字符串，`CONCAT('lfeng', 'hqh', 'xiaoxi');`
@@ -405,7 +353,9 @@
 > 只有一个返回值
 
 - `AVG()` ：平均值；
-- `COUNT()` ：计数，`COUNT(*)` ：返回被选行数；
+- `COUNT()` ：计数，
+    - `COUNT(*)` ：返回被选行数；
+    - `COUNT(*) num`: 设置别名;
 - `MAX()` ：最大值
 - `MIN()` ：最小值
 - `SUM()` ：某列的总和；
@@ -420,86 +370,3 @@
 - `NOW()` ：当前日期和时间；
 - `CURDATE()` ：当前日期；
 - `CURTIME()` ：当前时间；
-
-## 6.维护
-
-### 1.权限管理
-
-- 授权
-  - `GRANT 权限 ON 数据库.表 TO user [IDENTIFIED BY 'password']`
-  - 权限可以为:`ALL, SELECT, CREATE. ALTER, ....`
-  - 数据库和表可以用`*`匹配所有
-- 回收权限
-  - `REVOKE priv_type ON databases.table FROM user;`
-- 查看权限
-  - `SHOW GRANTS FOR user;`
-
-### 2.备份恢复
-
-> 逻辑备份: 将数据包含在一种 MySQL 能够解析的格式中(SQL 或格式文本)
->
-> 物理备份: 直接复制原始文件, 通常简单高效, 但是也有文件大(包含索引信息), 文件系统格式限制等问题;
-
-- 文件系统快照:
-
-### 3.查看配置和状态信息
-
-> 系统变量: 配置 MySQL 服务器的运行环境, 可以通过**配置文件**, **启动选项**, 或运行时进行配置;
->
-> 状态变量: 监控 MySQL 服务器的运行状态;
-
-- 变量:
-  - **查看**: 系统变量: `show variables;` 或者`show variables like 'log%';`
-    - 优先显示会话级别变量, 不存在则显示全局变量;
-    - 可以使用`show global variables;`指定显示全局变量;
-  - **设置**: 通过`set [GLOBAL|SESSION] variable_name = value`;
-    - 例如`SET GLOBAL sort_buffer_size=value; 或 SET @@global.sort_buffer_size=value;`
-  - 重要变量:
-    - `max_connections`: 最大连接数;
-    - `auto_increment_increment`: 自增增量;
-    - `auto_increment_offset`: 起始自增点;
-- 状态:
-  - 查看状态变量: `show status`或者`show status like 'Threads%';`
-  - `show processlist`: 显示那些线程正在运行;
-
-### 4.日志
-
-> 错误日志: 记录 MySQL 服务端在运行时产生的错误信息,
->
-> 查询日志: 记录所有 MySQL 活动;
->
-> 慢查询日志: 慢查询时间阈值, 以秒为单位, 超过这个阈值就是慢查询;
->
-> 二进制日志: 记录更新过数据的所有语句, 可以用这个日志做增量备份;
-
-- 日志配置:
-
-  ````ini
-  # 错误日志 #
-  log_error=/exdata1/logs/mysql/mysqld.log
-  # 日志等级, 可选1,error, 2,warn, 3, note
-  log_error_verbosity=3
-
-  # 查询日志 #
-  # 是否开启
-  general_log=ON
-  general_log_file=/exdata1/logs/mysql/mysql-general.log
-
-  # 慢查询日志 #
-  slow_query_log=ON
-  slow_query_log_file=/exdata1/logs/mysql/mysql-slow.log
-  # 慢查询日志阈值, 单位s
-  long_query_time=1
-  # 捕获所有未使用索引的SQL
-  log_queries_not_using_indexes=ON
-  # 限制未索引查询数量, 0无限制
-  log_throttle_queries_not_using_indexes=100
-  # 捕获管理类的SQL,(修改表, 创建索引,...)
-  log_slow_admin_statements=ON
-  #min_examined_row_limit=100000
-  二进制日志
-  log-bin=/x/x/x/x
-  ​```
-  ````
-
-- 二进制日志查看: `mysqlbinlog filename.number`
