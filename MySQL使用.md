@@ -306,10 +306,25 @@
 - 创建存储过程
 
   ```sql
-  CREATE PROCEDURE 存储过程名称(输入输出参数列表)
-  BEGIN
-    xxxx
-  END
+  -- 修改定界符
+  delimiter ;;
+  
+  -- 创建存储过程
+  create procedure idata()
+  begin
+    declare i int;
+    set i=1;
+    while(i<=100000)do
+      insert into t values(i, i, i);
+      set i=i+1;
+    end while;
+  end;;
+  
+  -- 还原定界符
+  delimiter ;
+  
+  -- 调用存储过程
+  call idata();
   ```
 
 - 调用存储过程: `CALL 存储过程名称;`

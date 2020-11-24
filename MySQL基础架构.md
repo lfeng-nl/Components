@@ -29,6 +29,11 @@
 ## 3.解析, 优化, 执行
 
 - MySQL会解析查询, 并创建内部数据结构(解析树),  然后对其进行优化.
+    - **优化器负责选择索引.**
+    - 优化器根据扫描行数的多少,  是否会使用临时表, 是否排序等因素进行判定, 选择合适的索引.
+    - 扫描行数的多少的判定?
+        - 一个索引上不同值越多. 这个索引的分区度就越好, 不同值的个数称为"基数 Cardinality"
+        - 可以通过`show index from table_name;`查看.
 - 用户可以使用关键字提示(`hint`)优化器.
 - 使用`explain`, 让优化器解释优化过程.
 
@@ -103,4 +108,39 @@
     - 每个索引都对应一棵`B+`树. 该`B+`树的每个**节点**都是一个数据页.
     - **聚簇索引**的叶子节点存储了完整的用户记录.
 
-## 
+## 6.WAL Write-Ahead Log
+
+> 所有修改提交前都要先写入日志文件, 再写磁盘.  具体就是: 当有记录需要更新时, `InnoDB`会先将记录写入到`redo log`, 并更新内存(`Buffer Pool`或者是`Change Buffer`), 更新完成.  引擎会在适当的时机, 将实际的数据写入磁盘.
+
+![数据更新过程](./image/redolog_binlog.jpg)
+
+### 1.redo log 重做日志
+
+> InnoDB 引擎特有的日志. 提高了写操作的效率(**数据的随机写入变为日志的顺序写入**), 并实现`crash-safe`能力(异常终止时, 可以通过`redo log`恢复.
+>
+> 在磁盘上表现为`ib_logfile[number]`文件的形式.
+
+![redolog](./image/redolog.jpg)
+
+- 空间大小固定. `check_point`: 需要擦除位置, 擦除前, 要把记录更新到数据文件. `write pos`: 当前记录位置.
+- 记录的是**数据页的物理修改**, 也就是**某个页产生了什么修改**. 相当于记录了要对磁盘进行什么样操作.
+- prepare和commit: 保证redolog 和 binlog的一致.
+- 配置:
+    - `nnodb_log_files_in_group`:  Redo log文件数量.(按序号循环覆盖写入)
+    - `innodb_log_group_home_dir`: 文件路径.
+    - `innodb_flush_log_at_trx_commit=1`: 每次事务完成执行`flush`, 保证落盘. 
+
+### 2.binlog
+
+> `Server`层日志. 记录所有的逻辑操作(DDL, DML). 所有引擎都可使用. 只用于**归档**.
+>
+> 1. 保证非`InnoDB`引擎的工作.
+> 2. 用于归档(追加写)
+
+- `binlog`模式:
+    - `statement`: 记录`sql`语句.
+    - `row`: 记录行的内容, 记两套(更新前, 更新后).
+    - 可以通过`binlog_format=mix/row/statement`配置.
+
+
+
