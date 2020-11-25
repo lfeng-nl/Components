@@ -110,22 +110,34 @@
 
 ## 6.WAL Write-Ahead Log
 
-> 所有修改提交前都要先写入日志文件, 再写磁盘.  具体就是: 当有记录需要更新时, `InnoDB`会先将记录写入到`redo log`, 并更新内存(`Buffer Pool`或者是`Change Buffer`), 更新完成.  引擎会在适当的时机, 将实际的数据写入磁盘.
+> 所有修改提交前都要先写入日志文件, 再写磁盘.  具体就是: 
+>
+> 1. 当有记录需要更新时, `InnoDB`会先将磁盘页更改写入到`redo log`, 更新内存(`Buffer Pool`或者是`Change Buffer`), 并写`binlog`. 
+> 2. 内存中数据被修改后, 称为脏页, 最终需要落盘. 可以和`redo log`无关联.
+> 3. 崩溃恢复场景中, `InnoDB`如果判断到数据丢失, 就会将其读到内存, 然后将`redo log`更新内存中的内容. 成为脏页, 最后落盘. 
+>
+> WAL机制, 将数据写入转换为日志写入(顺序写), 同时通过组提交(`redo log`, `binlog`写完再做`fsync`) 提高磁盘效率.
 
 ![数据更新过程](./image/redolog_binlog.jpg)
 
 ### 1.redo log 重做日志
 
-> InnoDB 引擎特有的日志. 提高了写操作的效率(**数据的随机写入变为日志的顺序写入**), 并实现`crash-safe`能力(异常终止时, 可以通过`redo log`恢复.
+> InnoDB 引擎特有的日志. 实现`crash-safe`能力(异常终止时, 可以通过`redo log`恢复.
 >
 > 在磁盘上表现为`ib_logfile[number]`文件的形式.
 
 ![redolog](./image/redolog.jpg)
 
 - 空间大小固定. `check_point`: 需要擦除位置, 擦除前, 要把记录更新到数据文件. `write pos`: 当前记录位置.
-- 记录的是**数据页的物理修改**, 也就是**某个页产生了什么修改**. 相当于记录了要对磁盘进行什么样操作.
-- prepare和commit: 保证redolog 和 binlog的一致.
+- 记录的是**数据页的物理修改**, 也就是**某个页产生了什么修改**. 相当于记录了要对磁盘进行什么样操作, **但不是数据页的完整数据**. 所以, `redo log`没有能力独自更新磁盘数据. 而是要依赖原有数据.
+- `prepare`和`commit`: 两阶段提交.
+- 磁盘写入机制:
+    - 有三个层级: `redo log buffer`, `FS page cache`, `硬盘`
+    - 事务执行过程中, 写`redo log buffer`.
+    - 事务完成时按照`innodb_flush_log_at_trx_commit`配置策略: 0:事务提交不写磁盘, 1:持久化到磁盘, 2.只写磁盘,不`fsync`.
+    - 后台进程, 每隔1秒, 就会将`redo log buffer`写入磁盘, 并`fsync`
 - 配置:
+    - `innodb_log_buffer_size`: 文件大小.
     - `nnodb_log_files_in_group`:  Redo log文件数量.(按序号循环覆盖写入)
     - `innodb_log_group_home_dir`: 文件路径.
     - `innodb_flush_log_at_trx_commit=1`: 每次事务完成执行`flush`, 保证落盘. 
@@ -141,6 +153,24 @@
     - `statement`: 记录`sql`语句.
     - `row`: 记录行的内容, 记两套(更新前, 更新后).
     - 可以通过`binlog_format=mix/row/statement`配置.
+- `binlog`完整性:
+    - 为确保数据的正确归档, `binlog`通过格式保证完整性.
+    - `statement`格式的, 最后会有`COMMIT`;
+    - `row`格式的, 最后会有`XID event`.
+    - `binlog_checksum=CRC32`: 校验和
+- 磁盘写入机制:
+    - 事务执行过程中, 先把日志写入`binlog cache`, 事务提交, 再把`binlog cache`写入文件.
+    - 参数`sync_binlog`控制刷盘时机: 0, 受系统控制, 1.n, n次事务提交后强制刷盘.
 
+### 3.两阶段提交和异常时的处理
 
-
+- `redo log`和`binlog`有一个共同的数据字段, `XID`, 完成两者的相互关联.
+- A时刻崩溃: 事务回滚. 
+- B时刻崩溃:
+    - 如果`redo log`事务完整, 也就是有了`commit`标识, 直接提交.
+    - 如果`redo log`只有`prepare`. 则判断`binlog`是否完整(`binlog`有特殊格式保证完整性)
+        - `binlog`完整: 提交事务.
+        - `binlog`不完整, 回滚事务.
+- 双"1"配置:
+    - `sync_binlog=1`
+    - `innodb_flush_log_at_trx_commit=1`
