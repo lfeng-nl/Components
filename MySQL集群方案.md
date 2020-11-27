@@ -4,6 +4,14 @@
 - PXC
 - MHA: Master High Availability, 一个 MySQL 高可用性环境下故障切换和主从提升的高可用软件, MHA 只负责 MySQL 主库的高可用. 主库故障时, MHA 会选择一个候选主节点作为新的主节点.
 
+## 2.主从同步
+
+![主从同步](./image/主从同步.jpg)
+
+- 主从备份步骤:
+    - 备库B上通过`change master`命令, 设置主库A的IP, 端口, 用户名,密码,以及需要从哪个位置开始请求`binlog`, 这个位置包含文件名和日志偏移量.
+    - 
+
 ## 2.MGR
 
 > 参考: [MySQL 集群 MGR 架构](<[https://www.93bok.com/MySQL%E9%9B%86%E7%BE%A4MGR%E6%9E%B6%E6%9E%84for%E5%8D%95%E4%B8%BB%E6%A8%A1%E5%BC%8F/](https://www.93bok.com/MySQL集群MGR架构for单主模式/)>), [MySQL 组复制](https://dev.mysql.com/doc/refman/5.7/en/group-replication.html), [MySQL Group Replication 解析](https://bbs.huaweicloud.com/blogs/115356)
