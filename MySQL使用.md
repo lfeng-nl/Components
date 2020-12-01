@@ -385,3 +385,15 @@
 - `NOW()` ：当前日期和时间；
 - `CURDATE()` ：当前日期；
 - `CURTIME()` ：当前时间；
+
+### 5.特殊用法
+
+- `@`: 使用用户变量:
+
+    - ```mysql
+        select max(id), min(id) into @M, @N from t;
+        set @X = floor((@M-@N+1)*rand() + @N);
+        select * from t where id>= @X limit 1;
+        ```
+
+- `@@`: 使用系统变量, 

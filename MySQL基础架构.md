@@ -76,7 +76,7 @@
 -  相关配置:
     -  `innodb_buffer_pool_size`: 缓冲池大小.
     -  `innodb_old_blocks_pct`: `Old`部分占比.
-    -  `innodb_old_blocks_time`:停留窗口时间. ms.
+    -  `innodb_old_blocks_time`:停留窗口时间.
 
 ### 2.Change Buffer
 
