@@ -37,7 +37,8 @@
 - 聚合函数, 逐行判断, 如果count参数不是`NULL`, 累计值加1.
     - `count(*), count(1), count(id)`都是计算行数.
     - `count(字段)`: 计算字段不为`NULL`的行数
-- 因为要判断字段是否为`NULL`, 所以, 不同`count`性能存在差异. 效率比较:`count(字段)<count(主键)<count(1)==count(*)`
+- 因为要判断字段是否为`NULL`, 所以, 不同`count`性能存在差异. 
+- 效率比较:`count(字段)<count(主键)<count(1)==count(*)`
 
 ### 2.排序
 

@@ -287,10 +287,10 @@
 
 ## 5.事务相关的 SQL 语句
 
-- `autocommit`: 自动提交模式, 每条 SQL 语句, 都是一个事务. 也可以通过`BEGIN/START TRANSACTION`显式开启一个事务.
-- 推荐设置为`1`, 有需要的地方显式开启事务.
-  - 可以通过`SHOW VARIABLES LIKE 'autocommit'`查看当前设置.
-  - 关闭自动提交后, 提交数据需要执行`COMMIT`;
+- `autocommit`: 自动提交模式, 每条 SQL 语句, 都是一个事务. 
+    - 推荐设置为`1`, 有需要的地方显式开启事务.
+    - 可以通过`SHOW VARIABLES LIKE 'autocommit'`查看当前设置.
+    - 关闭自动提交后, 提交数据需要执行`COMMIT`;
 - 显式的事务控制:
 
   - `START TRANSACTION / BEGIN`: 开始一个事务
