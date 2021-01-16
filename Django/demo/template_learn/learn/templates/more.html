@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Learn more{% endblock %}
+{% block body %}
+    <h2>模版学习</h2>
+    <p>为什么要使用模版？
+        <ul>
+            <li>用于编写html代码，还可以嵌入模板代码更快更方便的完成页面开发，再通过在视图中渲染模板，将生成最终的html字符串返回给客户端浏览器</li>
+            <li>模版致力于表达外观，一个视图可以使用任意一个模板，一个模板可以供多个视图使用</li>
+        </ul>
+    </p>
+    <p>模板包含两部分
+        <ul>
+            <li>静态部分，包含html、css、js</li>
+            <li>动态部分，就是模板语言</li>
+        </ul>
+    </p>
+    <p>Django处理模板分为两个阶段
+        <ul>
+            <li>加载：根据给定的路径找到模板文件，编译后放在内存中</li>
+            <li>渲染：使用上下文数据对模板插值并返回生成的字符串</li>
+        </ul>
+    </p>
+    <p>如果想了解更多内容，请访问官方文档：
+        <a href="https://docs.djangoproject.com/en/1.11/ref/templates/builtins/" target="_black">template</a>
+    </p>
+{% endblock %}

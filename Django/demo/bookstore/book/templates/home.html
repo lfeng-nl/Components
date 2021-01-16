@@ -1,0 +1,17 @@
+{% extends 'base.html' %} 
+{% block title_name %}home{% endblock %}
+{% block head1 %}所有书籍{% endblock %}
+{% block body %}
+{% if book_set %}
+{% for book in book_set %}
+<a href="book/?book_id={{ book.id }}">
+<img src="{{ book.img_url }}" alt="{{ book.title }}" />
+</a>
+<p>{{ book.title }}</p>
+<hr />
+{% endfor %}
+{% else %}
+<p>书籍为空</p>
+{% endif %}
+
+{% endblock %}

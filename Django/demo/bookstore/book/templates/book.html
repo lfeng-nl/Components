@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title_name %}
+{% if book %}
+{{ book.title }}
+{% else %}
+book
+{% endif %}
+{% endblock %}
+
+{% block style %}
+{% endblock %}
+
+{% block head1 %}
+{% if book %}
+{{ book.title }}
+{% else %}
+book
+{% endif %}
+{% endblock %}
+
+{% block body %}
+{% if book %}
+<dev>
+<img src="{{ book.img_url }}" alt="{{ book.title }}" style="margin: 0 auto;"/>
+<p><strong>{{ book.title }}</strong></P>
+<p>出版日期：{{ book.datatime }}</p>
+<p>作者{% for author in authors %} <a href="/author/?author_id={{ author.id }}">{{ author.name }}</a>{% endfor %}</p>
+<p>简介：{{ book.Summary　}}</p>
+<hr />
+</dev>
+<h1>评论区</h1>
+<form action="" method="post">
+    <table>
+        {{ form.as_table }}
+    </table>
+    <input type="submit" value="Submit">
+</form>
+{% endif %}
+{% if commands %}
+<ul>
+{% for command in commands %}
+<li><p>{{ command.name }}: {{ command.content }}</p></li>
+{% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

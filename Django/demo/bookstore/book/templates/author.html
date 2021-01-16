@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% if author %}
+{% block title_name %}
+{{ author.name }}
+{% endblock %}
+
+{% block head1 %}
+{{ author.name }}
+{% endblock %}
+
+{% block body %}
+<p>简介： {{ author.introduction }}</p>
+{% if books %}
+<p>主要著作：</p>
+{% for book in books %}
+<a href="/book/?book_id={{ book.id }}">{{ book.title }}</a>
+{% endfor %}
+{% endif %}
+{% endblock %}
+{% endif %}
+

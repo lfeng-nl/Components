@@ -1,0 +1,16 @@
+{% extends 'base.html' %} {% block title %}Template learn{% endblock %} {% block body %}
+<p>模板学习的主要内容有：{% for i in Navigation %} {{ i }}{% if not forloop.last %},{% endif %}{% endfor %}
+</p>
+<p>
+    <ul>
+        {% for key, value in info.items %}
+        <li>{{ key }} :
+            <pre> {{ value }} </pre>
+        </li>
+        {% endfor %}
+    </ul>
+</p>
+<p>
+    <a href="{% url 'more' %}" target="_black">了解更多</a>
+</p>
+{% endblock %}
