@@ -1,0 +1,3 @@
+---
+- name: test handler
+  shell: echo "test handler"

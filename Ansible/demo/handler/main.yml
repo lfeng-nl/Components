@@ -1,0 +1,20 @@
+---
+- name: handler demo
+  hosts: test
+  remote_user: root
+  
+  tasks: 
+        - name: notify handler 
+          shell: echo "hello handler"
+          notify:
+                - start handler
+
+        - name: notify handler once anain
+          shell: echo "hello handler"
+          notify:
+                - start handler
+
+# 常用于启动或重启服务、主机
+  handlers: 
+        - name: start handler
+          shell: echo "hello tasks"

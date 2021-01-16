@@ -1,0 +1,5 @@
+---
+
+- name: common task 1
+  shell: echo "hello common"
+  notify: common handler 

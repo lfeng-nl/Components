@@ -1,0 +1,13 @@
+---
+- name: when demo
+  remote_user: root
+  hosts: test
+
+  tasks: 
+        - name: symbol_1 test
+          shell: echo "helo symbol_1" 
+          when: symbol_1            
+ 
+        - name: symbol_2 test
+          shell: echo "hello symbol_2"
+          when: symbol_2 

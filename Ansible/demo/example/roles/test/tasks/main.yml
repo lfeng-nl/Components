@@ -1,0 +1,5 @@
+---
+
+- name: tast task 1
+  shell: echo "hello tast"
+  notify: test handler 

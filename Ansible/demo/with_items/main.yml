@@ -1,0 +1,12 @@
+---
+- name: with_items demo
+  remote_user: root
+  hosts: test
+  
+  tasks: 
+        - name: Install some package
+          # state: present 默认安装， lastest 安装最新版本，absent 删除
+          yum: name={{ item }} state=present
+          with_items:
+                - git
+                - tig

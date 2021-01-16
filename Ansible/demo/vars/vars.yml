@@ -1,0 +1,17 @@
+---
+# 用变量 "create_directory"创建目录
+- name: vars demo
+  hosts: all
+  remote_user: root
+  
+  vars:
+        create_directory: ~/ansible_study
+  tasks: 
+        - name: create directory {{ create_directory }}
+          file:
+                # 在首位置时必须加引号
+                path: "{{ create_directory }}"
+                owner: root
+                group: root
+                state: directory
+                mode: 0644

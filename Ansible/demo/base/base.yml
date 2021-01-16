@@ -1,0 +1,8 @@
+---
+- name: base demo
+  hosts: all
+  remote_user: root
+
+  tasks: 
+        - name: ping
+          ping:

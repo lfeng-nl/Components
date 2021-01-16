@@ -1,0 +1,11 @@
+---
+- name: with nested demo
+  remote_user: root
+  hosts: test
+  
+  tasks: 
+        - name: test with_nested founction
+          shell: echo "{{ item[0] }}{{ item[1] }} " >> ~/ansible_study/with_nested
+          with_nested:
+                - ['item1', 'item2']
+                - ['_1', '_2']

@@ -1,0 +1,13 @@
+---
+- name: include demo
+  hosts: test
+  remote_user: root
+  vars_files: 
+        - var/vars.yml
+  tasks:
+        - name: create file {{ file_name }}
+          file:
+                path: "{{ file_name }}"
+                mode: 0666
+                state: touch 
+          

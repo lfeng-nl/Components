@@ -1,0 +1,15 @@
+---
+
+- name: configure common 
+  hosts: all
+  remote_user: root
+
+  roles:
+        - common
+
+- name: configure test
+  hosts: test
+  remote_user: root
+
+  roles:
+        - test
