@@ -1,5 +1,7 @@
 # Kubernetes
 
+> Kubernetes项目要解决的问题: **运行在大规模集群中的各种任务之间，实际上存在着各种各样的关系, 这些关系的处理，才是作业编排和管理系统最困难的地方**
+
 ## 1.整体架构
 
 > 一个Kubernetes系统, 通常称之为Kubernetes集群. 由一个Master节点, 和若干Node节点组成.
@@ -10,10 +12,10 @@
 
 > 负责协调集群中的所有活动
 
-- kube-apiserver: 提供整个系统对外的HTTP接口.
--  kube-scheduler: Pod调度, 决定Pod放在哪一个Node上运行.
-- controller-manager: 一组控制器, Node Controller, Replication Controller, Endpoints Controller...
-- etcd: 分布式存储, 负责保存集群的配置信息和资源的状态. 
+- `kube-apiserver`: 提供整个系统对外的HTTP接口.
+-  `kube-scheduler`: Pod调度, 决定Pod放在哪一个Node上运行.
+- `controller-manager`: 一组控制器, Node Controller, Replication Controller, Endpoints Controller...
+- `etcd`: 分布式存储, 负责保存集群的配置信息和资源的状态. 
 
 ### 2.Node
 

@@ -4,11 +4,7 @@
 
 > **不同平台docker所使用的技术不同, 对于windows和Mac, 是基于虚拟化实现. **本这里讨论的是Linux Docker相关技术.
 >
-> 通过镜像和相关文件系统实现沙盒化, 环境一致.
->
-> 通过Cgroups实现资源控制.
->
-> 通过Namespace实现隔离.
+> 核心原理: 1.启动Linux Namesapve配置, 实现隔离.2.设置指定的Cgroups参数, 实现资源管控.3.切换进程根目录(Cahange Root), 实现
 
 ## 1.网络
 
@@ -65,7 +61,7 @@
 
 ![tun](./image/virtual-device-tuntap-4.png)
 
-## 2.Linux namespace
+## 2.Linux Namespace
 
 > 参考: [Docker基础技术: Linux Namespace](https://coolshell.cn/articles/17010.html)
 >
@@ -85,7 +81,7 @@
     - 例如: `CLONE_NEWPID, CLONE_NEWNET`:
 -  
 
-## 3.Linux Control Group
+## 3.Linux Cgroups
 
 > 参考: [Docker基础技术: Linux Cgroup](https://coolshell.cn/articles/17049.html)
 >
@@ -105,13 +101,31 @@
 
 ## 4.UFS/AUFS/Overlay2
 
-> 容器启动时: 1.启用`CLONE_NEWNS` 挂载namespace的隔离.2.切换进程的根目录(Change Root)
+> 容器启动时: 通过Namespace设置挂载隔离, 切换根目录(挂载镜像中的目录). 但是共用操作系统的内核(bootfs).
 >
-> dockers存储支持: `OVERLAY2, AUFS, ZFS`等多种文件系统. 可以通过`docker info|grep Storage`
+> 镜像中包含`rootfs`, 相当于封装了应用运行的所有依赖.
 >
-> - 为什么Docker镜像采用分层的形式? 
->     - 使镜像在复用, 定制变的更为容易, 甚至可以用之前构建好的镜像作为基础层, 然后进一步添加新的层, 以定制自己所需的内容.
->     - 多个镜像可以共享基础镜像, 节省资源.
+> 通过引入`layer`的概念, 复用已有的文件系统, 在此基础上的修改作为一个新的层.
+>
+> dockers存储支持: `OVERLAY2, AUFS, ZFS`等多种文件系统. 可以通过`docker info|grep Storage`查看.
+>
+
+### 1.rootfs vs bootfs
+
+- `bootfs`:
+    - 包含`boot loader`和`kernel`, 各个发行版本没有区别.
+    - Docker容器共享主机系统的`bootfs`.
+
+- `rootfs`: 
+    - 针对特定的操作系统的架构, 一种实现形式, 通俗讲就是`/, /etc, /sbin, /usr/bin`等诸如此类有特殊含义和规定的文件目录.
+    - 内核启动时`mount`的第一个文件系统, 用于存储整个目录树.
+    - 每个容器有自己的`rootfs`, 基于不同的Linux发行版本基础镜像.
+
+### 2.联合文件系统 Union File System
+
+> 将不同位置的目录**联合挂载到同一目录下**.
+
+- - 
 
 ### 1.Overlay
 
@@ -126,20 +140,7 @@
 
 ![layer](./image/layer.jpg)
 
-### 2.Union File System
-
-> 不同位置的目录联合挂载到同一目录下.
-
-### 3.rootfs vs bootfs
-
-> 文件系统: 解决如何在磁盘上定位和索引文件.
->
-> `bootfs`: 包含boot loader 和 kernel
->
-> `rootfs`: 内核启动时`mount`的第一个文件系统, 用于存储整个目录树;
-
-- `rootfs`只是操作系统所包含的文件, 配置和目录. 不包含系统内核.
-    - 内核是再开机启动时加载内核镜像.
+- - 
 
 ## 其他参考
 
