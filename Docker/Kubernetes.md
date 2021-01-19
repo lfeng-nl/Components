@@ -30,14 +30,73 @@
 
 
 
-## 2.作业管理
+## 2.概念
+
+![概念](./image/概念.png)
 
 ### 1.Pod
+
+- 多个关联的容器和一些共用资源.
 
 - 为什么需要Pod?
     - 有些任务需要一组进程共同完成, 进程间相互会直接发生文件交换, 使用`localhost`或本地`socket`通信, 会发生频繁的远程调用, 需要共享某些Namespace.
     - Pod是Kubernetes的原子调度单位.
     - Pod就是一组共享了某些资源的容器.
     - Pod中的容器, 通过`Infra`容器关联在一起. Pod的生命周期只和Infra容器一致.
-    - ![pod](./image/pod.png)
+
+### 2.Deployment
+
+> 部署的对象, 用户负责描述Deployment中的目标状态(声明式更新). Deployment控制器实施更新, 使其变更为期望状态.
+
+- 例如, 下面的Deployment负责启动三个`nginx`Pods:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+```
+
+### 3.Ingress
+
+> Ingress对集群中`service`的外部访问进行管理的API对象. 可以提供负载均衡
+
+- 例如一个最小的`Ingress`资源:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minimal-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /testpath
+        pathType: Prefix
+        backend:
+          service:
+            name: test
+            port:
+              number: 80
+```
 
