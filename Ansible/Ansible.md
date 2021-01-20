@@ -37,10 +37,21 @@
 
 ### 2.建立远程连接
 
->ssh：SSH是Secure Shell的缩写。是目前较可靠，专为远程登录会话和其他网络服务提供安全性的协议。通过使用SSH，可以把所有传输的数据进行加密，而且能够防止DNS欺骗和IP欺骗。使用SSH，还可以将传输的数据压缩，所以可以加快传输的速度。SSH可以为FTP提供一个安全的“通道”。
->SSH保证安全的原因：1.远程主机收到用户的登录请求，把自己的公钥发给用户，2.用户使用公钥，将登录密码加密后，发送回来，3.远程主机用自己的私钥，解密登录密码，如果正确，同意登录。（中间人攻击）
->公钥登录，用户将自己的公钥存储在远程主机上，登录时，远程主机会向用户发送一段随机字符串，用户用自己的私钥加密后，在发回来，远程主机用事先存储的公钥进行解密，成功，就证明用户可信，如GitHub
->使用SSH协议进行FTP传输的协议叫SFTP(安全文件传输)
+- SSH免密登录原理:
+    - 相关文件作用:
+        - `authorized_keys`: 免密登录, 远程主机用于存储用户的公钥**, 可实现免密登录.
+        - `id_rsa`: 私钥
+        - `id_rsa.pub`: 公钥
+        - `known_hosts`:记录已经连接的远程主机公钥,  下次再次连接, 会跳过告警, 直接提示输入密码.
+    - 口令登录:
+        - 服务端发送公钥给客户端.(首次会弹出告警, 用户需要核对服务端公钥正确性, 同意后添加到`knows_hosts`)
+        - 双方协商会话ID, 会话密钥, 用服务端公钥进行加密传输. 后续使用**会话密钥进行加密解密**.
+        - 客户端将账号密码加密后发送服务端验证.
+    - 公钥登录:
+        - 客户端将公钥发送服务端.
+        - 服务端比对公钥, 如果在`authorized_keys`查到, 会生成随机字符串, 简称"质询", 用公钥加密发送客户端.
+        - 客户端解密, 然后用会话密钥加密发送服务端. 服务端校验通过. 则认证通过.
+    - 生成密钥对: `ssh-keygen -t rsa`
 
 - 主机同远程节点建立连接需要实现以下几点：1.主机安装Ansible和依赖模块，2.节点安装满足要求的python版本；3.主机的SSH公钥发送到节点（SSH连接）；4.主机建立好节点设置文件（Inventory file），`/etc/ansible/hosts`;
 
@@ -131,15 +142,16 @@
 ##4.Playbooks
 
 >   Ansible提供两种方式去完成任务,一是 ad-hoc 命令；一是写 Ansible playbook。前者可以解决一些简单的任务,
->   后者解决较复杂的任务；
+>   后者解决较复杂的任务.
 >
 >   ad-hoc命令：例如`ansible -m ping  'group_name'`
 >
 >   Ansible playbook：使用`ansible-playbook xxxx.yml`命令
 
-### 1.基础
+### 1.Play
 
--   Playbooks 是 Ansible的配置，部署，编排语言。他们可以被描述为一个需要希望远程主机执行命令的方案，或者一组IT程序运行的命令集合。
+- **Play**: 某个特定的目的
+    - 每个play可以指定：`name, hosts, remote_user, tasks, vars， handler`;
 
 -   例如：
 
@@ -154,9 +166,9 @@
         ping:
     ```
 
--   每个play可以指定：`name, hosts, remote_user, tasks, vars， handler`;
-
 -   `name`：便于输出信息中识别；
+
+-   `become`: 权限提升
 
 -   `hosts`：指定主机，或主机组；
 
@@ -189,7 +201,7 @@
         	image: emi-048B3A37
         ```
 
--   `handler`：Handlers 也是一些 task 的列表，通过名字来引用。Handlers 是由通知者进行 notify，如果没有被 notify，handlers 不会执行。不管有多少个通知者进行了 notify，等到 play 中的所有 task 执行完成之后，handlers  也只会被执行一次。Handlers 最佳的应用场景是用来重启服务,或者触发系统重启操作.除此以外很少用到了。
+-   `handler`：Handlers 也是一些 task 的列表，通过名字来引用。由通知触发, `task`执行完毕时执行一次. 通常用于重启服务.
 
     -   ```yaml
         - name: Create Mysql configuration file
@@ -206,6 +218,8 @@
         - name: restart mysql
           service: name=mysqld state=restarted
         ```
+
+- `roles`:  指定roles名称.
 
 ### 2.Include and Roles
 
@@ -228,20 +242,17 @@
         - include: xxx.yml
         ```
 
--   roles：基于一个已知的文件结构，去自动的加载某些 `vars_files`，`tasks` 以及 `handlers`等；
+- `Roles`：基于一个已知的文件结构，去自动的加载某些 `vars_files`，`tasks` 以及 `handlers`等；
 
--    `playbook `为一个角色`xxx`指定了如下的行为：
-
+    -    `playbook `为一个角色`xxx`指定了如下的行为：
     -   如果 `roles/xxx/tasks/main.yml `存在, 其中列出的 `tasks` 将被添加到 play 中
-    -   如果 `roles/xxx/handlers/main.yml `存在, 其中列出的 `handlers` 将被添加到 play 中
-    -   如果 `roles/xxx/vars/main.yml `存在, 其中列出的 `variables` 将被添加到 play 中
-    -   如果 `roles/x/meta/main.yml `存在, 其中列出的 “角色依赖” 将被添加到` roles `列表中 (1.3 and later)
-    -   所有 `copy tasks` 可以引用 `roles/xxx/files/ `中的文件，不需要指明文件的路径。
-    -   所有 `script tasks` 可以引用 `roles/xxx/files/ `中的脚本，不需要指明文件的路径。
-    -   所有` template tasks` 可以引用 `roles/xxx/templates/` 中的文件，不需要指明文件的路径。
-    -   所有 `include tasks` 可以引用` roles/xxx/tasks/ `中的文件，不需要指明文件的路径。
-
-    >   还可以为`roles`的搜索设定 `roles_path` 配置项。使用这个配置项将所有的 common 角色 check out 到一个位置，以便在多个 playbook 项目中可方便的共享使用它们。
+        -   如果 `roles/xxx/handlers/main.yml `存在, 其中列出的 `handlers` 将被添加到 play 中
+        -   如果 `roles/xxx/vars/main.yml `存在, 其中列出的 `variables` 将被添加到 play 中
+        -   如果 `roles/x/meta/main.yml `存在, 其中列出的 “角色依赖” 将被添加到` roles `列表中 (1.3 and later)
+        -   所有 `copy tasks` 可以引用 `roles/xxx/files/ `中的文件，不需要指明文件的路径。
+        -   所有 `script tasks` 可以引用 `roles/xxx/files/ `中的脚本，不需要指明文件的路径。
+        -   所有` template tasks` 可以引用 `roles/xxx/templates/` 中的文件，不需要指明文件的路径。
+        -   所有 `include tasks` 可以引用` roles/xxx/tasks/ `中的文件，不需要指明文件的路径。
 
 ### 3.[Variables](http://www.ansible.com.cn/docs/playbooks_variables.html#id10)
 
@@ -317,12 +328,16 @@
         	- ['_1', '_2']
         ```
 
-## 5.模块
+## 5.Module
 
 参考[Ansible常用模块](http://blog.csdn.net/pushiqiang/article/details/78249665)：
 
 -   常用模块有：`ping,raw, yum, apt, pip, synchronize, template, copy, service , get_url, file, command , shell `等；
 -   `script`模块：可以实现到对象节点上执行本机脚本。
+-   `copy`: 从本地复制档案到远端.
+-   `fetch`: 拉取客户端文件.
+-   `command`: 执行命令. 避免`shell`注入, 更为安全.
+-   `shell`: 执行命令.可以使用管道, 重定向等, 更为强大.
 
 ## 6.实例
 

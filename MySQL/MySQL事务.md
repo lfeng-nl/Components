@@ -216,7 +216,7 @@
 >
 > 用于恢复异程序异常终止时, 内存中未落盘的**脏页**.
 
-![redolog](D:/GitHub/DB/image/redolog.jpg)
+![redolog](./image/redolog.jpg)
 
 - `redo log`磁盘空间大小固定(配置指定文件数量和文件大小). 
     - `check_point`: 需要擦除位置, 之前的数据页已经刷新到磁盘.
@@ -285,7 +285,7 @@
     - 内存中数据被修改后, 称为脏页, 最终需要落盘. 可以和`redo log`无关联.
     - 崩溃恢复场景中, `InnoDB`根据`redo log`和`binlog`判断到数据丢失, 就会将其读到内存, 然后将`redo log`更新内存中的内容. 成为脏页, 最后落盘. 
 
-![数据更新过程](D:/GitHub/DB/image/redolog_binlog.jpg)
+![数据更新过程](./image/redolog_binlog.jpg)
 
 ## 5.事务相关的 SQL 语句
 
