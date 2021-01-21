@@ -35,11 +35,65 @@
 - Pod: 可以在Kubernetes中创建和管理的, 最小的可部署计算单元. 
     - 一组容器以及共享的资源(网络资源, 空间资源等), 容器间时相对紧密的耦合在一起的. 
 
-## 2.概念
+## 2.Kubernetes对象
+
+> 目标性记录, 一旦创建, Kubernetes系统将持续工作, 以确保对象存在. 创建对象就是在告知Kubernetes系统, 所需要的工作负载看起来是怎样的(期望状态)
+>
+> Kubernetes通过Kubernetes API来进程创建,修改,删除.
+
+### 1.Kubernetes对象
+
+- Kubernetes对象的描述
+
+```yaml
+# 必要, Kubernetes API 的版本
+apiVersion: apps/v1
+
+# 必要, 对象类型, 如: Pod, Deployment, Ingrees, Service...
+kind: Deployment
+
+# 必要, 对象元数据信息, 例如name, uid, labels等信息
+metadata:
+  name: nginx-deployment
+  labels:
+   key1: value1
+   key2: value2
+
+# 必要, 对象规格, 内容根据具体对象而定
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  replicas: 2 
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+```
+
+- 标签(Labels)和标签的选择算:
+    - Labels:  附加到对象上的键值对, 用于指定对象的标识属性, 用于查询, 监听对象.
+    - 标签的选择运算: 客户端/用户可以识别一组对象(满足运算条件的标签)
+        - `=, !=` : `kubectl get pods -l environment=production`
+        - `in, notin, exists`: `kubectl get pods -l 'environment in (production)`  
+- 对象管理:
+    - 命令式管理: `kubectl run/expose/... xx`;
+    - 对象配置管理(命令式): `kubectl create/replace/delete -f xxx.yaml`
+    - 对象配置管理(声明式): `kubectl apply -f xxx.yaml`
 
 ![概念](./image/概念.png)
 
-### 1.Pod
+### 2.Pod
+
+- 只是一个逻辑概念, 通常不需要直接创建, 而是使用Deployment或Job这类工作负载来创建Pod.
+    - 类似的工作负载资源有: Deployment, StatefulSet, DaemonSet. 
+    - 工作负载会使用负载对象的`PodTemplate`来生产实际的Pod.
 
 - 多个关联的容器和一些共用资源. 就是Kubernetes世界的一个应用.
 
@@ -48,6 +102,44 @@
     - Pod是Kubernetes的原子调度单位.
     - Pod就是一组共享了某些资源的容器.
     - Pod中的容器, 通过`Infra`容器关联在一起. Pod的生命周期只和Infra容器一致.
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp-pod
+  labels:
+    app: myapp
+spec:
+  containers:
+  - name: myapp-container
+    image: busybox
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  initContainers:
+  - name: init-myservice
+    image: busybox
+    command: ['sh', '-c', "until nslookup myservice.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for myservice; sleep 2; done"]
+  - name: init-mydb
+    image: busybox
+    command: ['sh', '-c', "until nslookup mydb.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for mydb; sleep 2; done"]
+```
+
+#### 1.生命周期
+
+- `Pending` --> `Running` --> `Successed/Failed`
+- Pod生命周期内只会被调度一次. 一旦被分配到节点上, Pod会运行到停止. Pod自身不具有自愈能力.
+
+#### 2.Init Container
+
+> 比`spec.containers`定义的用户容器先启动. 并且会按照顺序逐一启动.
+
+- 每个Init容器会在网络和数据卷初始化之后按顺序启动.**每个Init容器成功退出后才会启动下一个Init容器**.
+
+#### 3.重要字段
+
+- **nodeSelector**: 将Pod与Node进行绑定的字段.
+- **hostALiases**: 定义Pod的hosts文件内容.
+- **containers**: 容器信息.
 
 ### 2.Deployment
 
@@ -87,11 +179,24 @@ spec:
         - containerPort: 80
 ```
 
+### 3.ReplicaSet
+
+> 维护一组在任何时候都处于运行状态的Pod副本的稳定集合. 通常用于保证给定数量, 完全相同的Pod的可用性.
+
+- Deployment是一个更高级的概念, 管理ReplicaSet, 通常使用Deployment而不是ReplicaSet.
+- Deployment通过ReplicaSet的个数描述应用版本, 然后通过ReplicaSet的属性, 保证Pod副本数量.
+    - Deployment 控制 ReplicaSet版本.
+    - ReplicaSet控制Pod数量.
+
+<img src="./image/ReplicaSet.png" alt="ReplicaSet" style="zoom: 50%;" />
+
+
+
 ### 3.Ingress
 
-> Ingress对集群中`service`的外部访问进行管理的API对象. 可以提供负载均衡
-
-- 
+> Ingress对集群中`service`的外部访问进行管理的API对象, 为了代理不同后端的Service而设置的负载均衡服务.
+>
+> 简单粗暴**所谓Ingress就是Service的"Service"**.
 
 - 例如一个最小的`Ingress`资源:
 
@@ -100,9 +205,9 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: minimal-ingress
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+
 spec:
+  # IngressRule, key
   rules:
   - http:
       paths:
@@ -137,7 +242,62 @@ spec:
       targetPort: 9376
 ```
 
+### 5.Secret
 
+> 将Pod想要访问的加密数据, 存放到Etcd中, 然后就可以通过在Pod的容器里挂载Volume的方式, 访问到这些Secret.
+
+### 6.ConfigMap
+
+> 用于将非机密性数据保存到键值对中, 使用时, 可以将其作为**环境变量, 命令行参数, 存储在卷中的配置文件**.
+
+- ```yaml
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: game-demo
+    data:
+      # 类属性键；每一个键都映射到一个简单的值
+      player_initial_lives: "3"
+      ui_properties_file_name: "user-interface.properties"
+    
+      # 类文件键
+      game.properties: |
+        enemy.types=aliens,monsters
+        player.maximum-lives=5    
+      user-interface.properties: |
+        color.good=purple
+        color.bad=yellow
+        allow.textmode=true    
+    ```
+
+- 使用:
+
+    - 在容器 命令和参数内.
+
+    - 容器的环境变量
+
+    - 在只读卷中添加一个文件, 让应用来读.
+
+    - ```yaml
+              env:
+                # 定义环境变量
+                - name: PLAYER_INITIAL_LIVES    # 环境变量名
+                  valueFrom:
+                    configMapKeyRef:
+                      name: game-demo           # 来自 game-demo 这个 ConfigMap
+                      key: player_initial_lives # 需要取值的键
+                - name: UI_PROPERTIES_FILE_NAME # 环境变量名
+                  valueFrom:
+                    configMapKeyRef:
+                      name: game-demo
+                      key: ui_properties_file_name
+              volumeMounts:
+              - name: config
+                mountPath: "/config"
+                readOnly: true
+        ```
+
+    - 
 
 ## 3.设计理念
 
@@ -149,3 +309,28 @@ spec:
     - 假定任何错误的可能并对错误进行处理.
     - 每个模块都可以在出错后自动恢复.
     - 每个模块都考虑服务降级(高级功能, 基本功能).
+
+### 1.控制器模型
+
+- **控制循环(control loop)/Reconcile Loop/Sync loop**
+
+```
+for {
+	实际状态 := 获取集群中对象 X 的实际状态（Actual State）
+	期望状态 := 获取集群中对象 X 的期望状态（Desired State）
+	if 实际状态 == 期望状态{
+		什么都不做
+} else {
+		执行编排动作，将实际状态调整为期望状态
+	}
+}
+```
+
+- 控制器本身就是一个对象(例如Deployment) , 设计原理就是: **用一种对象管理另一种对象**
+
+### 2.声明式API
+
+- 声明式API
+    - 我们只需要提交一个定义好的API对象来"声明"所期望的状态是什么样子.
+    - 允许有多个API写端, 以**PATCH的方式对API对象进行修改**.
+    - Kubernetes基于对API对象的增,删,改,查, 在完全无需外界干预的情况下,完成对"实际状体"和期望状态的调谐(Reconcile)过程.

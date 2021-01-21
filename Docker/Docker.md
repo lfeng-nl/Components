@@ -16,6 +16,8 @@
 
 ### 容器 Container
 
+> 容器的本质是进程.
+
 ![container](./image/container.png)
 
 ### 网络 Network
