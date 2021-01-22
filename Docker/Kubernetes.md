@@ -334,3 +334,12 @@ for {
     - 我们只需要提交一个定义好的API对象来"声明"所期望的状态是什么样子.
     - 允许有多个API写端, 以**PATCH的方式对API对象进行修改**.
     - Kubernetes基于对API对象的增,删,改,查, 在完全无需外界干预的情况下,完成对"实际状体"和期望状态的调谐(Reconcile)过程.
+
+### 3.CNI, CSI, CRI
+
+> CNI: Container Networking Interface
+>
+> CSI: Container Storage Interface
+>
+> CRI: Container Runtime interface
+
