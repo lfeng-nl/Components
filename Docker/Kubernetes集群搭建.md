@@ -109,16 +109,22 @@ ip a
 - 镜像无法下载的解决方案:
     - 修改tag满足镜像[csdn](https://blog.csdn.net/zhongbeida_xue/article/details/104615259)
 
-        - ```shell
-            kubeadm config images list |sed -e 's/^/docker pull /g' -e 's#k8s.gcr.io#docker.io/mirrorgooglecontainers#g' |sh -x
-            docker images |grep mirrorgooglecontainers |awk '{print "docker tag ",$1":"$2,$1":"$2}' |sed -e 's#docker.io/mirrorgooglecontainers#k8s.gcr.io#2' |sh -x
-            docker images |grep mirrorgooglecontainers |awk '{print "docker rmi ", $1":"$2}' |sh -x
-            docker pull coredns/coredns:1.2.2
-            docker tag coredns/coredns:1.2.2 k8s.gcr.io/coredns:1.2.2
-            docker rmi coredns/coredns:1.2.2
-            ```
-
     - 使用kubeadm配置文件, 通过在配置文件中指定docker仓库[csdn](https://blog.csdn.net/zhongbeida_xue/article/details/104615259)
+        - `kubeadm config print init-defaults > kubeadm.yaml`: 导出配置文件.
+        - 修改`imageRepository: k8s.gcr.io` --> `imageRepository: registry.aliyuncs.com/google_containers`
+        - `kubeadm config images pull --config kubeadm.yaml`: 下载镜像.
+        - `kubeadm init --config kubeadm.yaml`: 
+    - `kubeadm init --image-repository registry.aliyuncs.com/google_containers`
+
+**6.配置kubectl**
+
+  `mkdir -p $HOME/.kube`
+  `sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config`
+  `sudo chown $(id -u):$(id -g) $HOME/.kube/config`
+
+root用户, 可以直接使用: 
+
+  `export KUBECONFIG=/etc/kubernetes/admin.conf`
 
 ## 4.证书
 
