@@ -14,34 +14,90 @@
 
 ### 1.Master(Control Plane)
 
-> 负责协调集群中的所有活动
+> 集群的控制节点, 负责协调集群中的所有活动
 
-- `kube-apiserver`: 提供整个系统对外的HTTP接口. 可以使用`kubectl`的封装.
+- `kube-apiserver`: 作为Kubernetes系统的入口, 以REST API接口方式提供给外部客户端和内部组件.
 - `kube-scheduler`: Pod调度, 决定Pod放在哪一个Node上运行.
     -  根据预选规则, 选出合适的主机.
     -  根据优选规则打分, 选择合适的Node.
-- `controller-manager`: 一组控制器, `Node Controller`, `Replication Controller`, `Endpoints Controller`...
-- `etcd`: 分布式存储, 负责保存集群的配置信息和资源的状态. 
+- `controller-manager`: 一组控制器, `Node Controller`, `Replication Controller`, `Endpoints Controller`等
+    - 维护对应的`Kuberenetes对象`
+- `etcd`: 分布式存储系统, 负责保存`kube-apiserver`维护的数据. 
 
 ### 2.Node
 
-> 维护Pod, 使用API和Master通信, 指单台服务器(物理或者虚拟)
+> 集群中, Master节点之外的物理节点. 工作负载节点, 使用API和Master通信.
 
 ![node](./image/node.jpg)
 
-- `kubelet`: 负责Pod的管理.
-- `kube-proxy`: 维护节点上的网络规则, 负责Pod的负载均衡和服务发现(service的落地).
+- `kubelet`: 负责Pod的管理, 从`kube-apiserver`接收指令, 监控容器状态并汇报给`kube-apiserver`.
+- `kube-proxy`: 维护节点上的网络规则, 负责Pod的负载均衡和服务发现(Service的落地).
 - `continue-runtime`: 容器运行时, 负责运行容器.
-- Pod: 可以在Kubernetes中创建和管理的, 最小的可部署计算单元. 
-    - 一组容器以及共享的资源(网络资源, 空间资源等), 容器间时相对紧密的耦合在一起的. 
 
-## 2.Kubernetes对象
+## 2.设计理念
 
-> 目标性记录, 一旦创建, Kubernetes系统将持续工作, 以确保对象存在. 创建对象就是在告知Kubernetes系统, 所需要的工作负载看起来是怎样的(期望状态)
+- API设计原则: 
+    - 1.声明式API(用户期望的系统应该是什么样子), 对于重复操作是稳定的.
+    - 2.API 以业务基础, 操作意图出发, 设计API.
+
+- 控制机设计原则:
+    - 假定任何错误的可能并对错误进行处理.
+    - 每个模块都可以在出错后自动恢复.
+    - 每个模块都考虑服务降级(高级功能, 基本功能).
+
+### 1.控制器模型
+
+> 控制机设计原则:
 >
-> Kubernetes通过Kubernetes API来进程创建,修改,删除.
+> - 假定任何错误的可能并对错误进行处理.
+>
+> - 每个模块都可以在出错后自动恢复.
+>
+> - 每个模块都考虑服务降级(高级功能, 基本功能).
 
-### 1.Kubernetes对象
+- **控制循环(control loop)/Reconcile Loop/Sync loop**
+
+```
+for {
+	实际状态 := 获取集群中对象 X 的实际状态（Actual State）
+	期望状态 := 获取集群中对象 X 的期望状态（Desired State）
+	if 实际状态 == 期望状态{
+		什么都不做
+} else {
+		执行编排动作，将实际状态调整为期望状态
+	}
+}
+```
+
+- 控制器本身就是一个对象(例如Deployment) , 设计原理就是: **用一种对象管理另一种对象**
+
+### 2.声明式API
+
+- 我们只需要提交一个定义好的API对象来"声明"所期望的状态是什么样子.
+- 允许有多个API写端, 以**PATCH的方式对API对象进行修改**.
+- Kubernetes基于对API对象的增,删,改,查, 在完全无需外界干预的情况下,完成对"实际状体"和期望状态的调谐(Reconcile)过程.
+
+### 3.CNI, CSI, CRI
+
+> CNI: Container Networking Interface
+>
+> CSI: Container Storage Interface
+>
+> CRI: Container Runtime interface
+
+
+
+## 3.Kubernetes对象
+
+> 在 Kubernetes 系统中，*Kubernetes 对象* 是持久化的实体。 Kubernetes 使用这些实体去表示整个集群的状态：
+>
+> - 哪些容器化应用在运行（以及在哪些节点上）
+> - 可以被应用使用的资源
+> - 关于应用运行时表现的策略，比如重启策略、升级策略，以及容错策略
+
+![概念](./image/概念.png)
+
+### 1.对象的描述和维护
 
 - Kubernetes对象的描述
 
@@ -85,11 +141,11 @@ spec:
 - 对象管理:
     - 命令式管理: `kubectl run/expose/... xx`;
     - 对象配置管理(命令式): `kubectl create/replace/delete -f xxx.yaml`
-    - 对象配置管理(声明式): `kubectl apply -f xxx.yaml`
-
-![概念](./image/概念.png)
+    - **对象配置管理(声明式): `kubectl apply -f xxx.yaml`**
 
 ### 2.Pod
+
+> **Pod，实际上是在扮演传统基础设施里“虚拟机”的角色；而容器，则是这个虚拟机里运行的用户程序**
 
 - 只是一个逻辑概念, 通常不需要直接创建, 而是使用Deployment或Job这类工作负载来创建Pod.
     - 类似的工作负载资源有: Deployment, StatefulSet, DaemonSet. 
@@ -129,7 +185,7 @@ spec:
 - `Pending` --> `Running` --> `Successed/Failed`
 - Pod生命周期内只会被调度一次. 一旦被分配到节点上, Pod会运行到停止. Pod自身不具有自愈能力.
 
-#### 2.Init Container
+#### 2.InitContainer
 
 > 比`spec.containers`定义的用户容器先启动. 并且会按照顺序逐一启动.
 
@@ -137,9 +193,13 @@ spec:
 
 #### 3.重要字段
 
-- **nodeSelector**: 将Pod与Node进行绑定的字段.
-- **hostALiases**: 定义Pod的hosts文件内容.
-- **containers**: 容器信息.
+- `spec.restartPolicy`: 重启策略. `Always|OnFailure|Never`.
+
+- `spec.nodeSelector`: 将Pod调度到指定的node上.
+- `spec.hostALiases`: 定义Pod的hosts文件内容.
+- `spec.containers`: 容器信息.
+
+#### 4.健康检查
 
 ### 2.Deployment
 
@@ -299,47 +359,7 @@ spec:
 
     - 
 
-## 3.设计理念
+## 4.CNI
 
-- API设计原则: 
-    - 1.声明式API(用户期望的系统应该是什么样子), 对于重复操作是稳定的.
-    - 2.API 以业务基础, 操作意图出发, 设计API.
-
-- 控制机设计原则:
-    - 假定任何错误的可能并对错误进行处理.
-    - 每个模块都可以在出错后自动恢复.
-    - 每个模块都考虑服务降级(高级功能, 基本功能).
-
-### 1.控制器模型
-
-- **控制循环(control loop)/Reconcile Loop/Sync loop**
-
-```
-for {
-	实际状态 := 获取集群中对象 X 的实际状态（Actual State）
-	期望状态 := 获取集群中对象 X 的期望状态（Desired State）
-	if 实际状态 == 期望状态{
-		什么都不做
-} else {
-		执行编排动作，将实际状态调整为期望状态
-	}
-}
-```
-
-- 控制器本身就是一个对象(例如Deployment) , 设计原理就是: **用一种对象管理另一种对象**
-
-### 2.声明式API
-
-- 声明式API
-    - 我们只需要提交一个定义好的API对象来"声明"所期望的状态是什么样子.
-    - 允许有多个API写端, 以**PATCH的方式对API对象进行修改**.
-    - Kubernetes基于对API对象的增,删,改,查, 在完全无需外界干预的情况下,完成对"实际状体"和期望状态的调谐(Reconcile)过程.
-
-### 3.CNI, CSI, CRI
-
-> CNI: Container Networking Interface
->
-> CSI: Container Storage Interface
->
-> CRI: Container Runtime interface
+## 5.安全
 

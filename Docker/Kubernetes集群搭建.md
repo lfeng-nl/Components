@@ -1,6 +1,6 @@
 # Kubernetes集群搭建
 
-## 1.工具搭建
+## 1.搭建方案和工具
 
 - minikube: [参考](https://minikube.sigs.k8s.io/docs/start/)
     - 搭建本地Kubernetes.
@@ -11,9 +11,8 @@
     - `kind create cluster`
 - kubeadm: 
     - 可用于生产环境搭建.
-    - 
 
-## 2.所需组件
+## 2.所需组件及作用
 
 - **etcd(主节点)**: 数据存储和持久化, 需要高可用.
 - **kube-apiserver(主节点)**: 管理集群的Rest API接口, 模块和模块间的交互和通信枢纽.
@@ -23,35 +22,56 @@
 - **kube-proxy(所有节点)**: 通过`iptables`为服务配置负载均衡.
 - **kube-dns(所有节点)**: 为集群增加dns功能.
 
-## 3.工具安装
+## 3.kubeadm搭建k8s集群
 
-### kubectl kubeadm kubelet安装
+> 环境要求: 2CPU核心, 2GB内存, 
 
-允许 iptables 检查桥接流量:
+### 1.禁用 swap
 
 ```shell
-cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
-br_netfilter
-EOF
-
-cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-net.bridge.bridge-nf-call-ip6tables = 1
-net.bridge.bridge-nf-call-iptables = 1
-EOF
-sudo sysctl --system
+sudo swapoff -a
 ```
 
-禁用SELinux
+- 可以在`/etc/fstab`中检查`swap`类型的挂载, 禁用.
+
+### 2.检查`product_uuid`和mac地址, 确保每台机器唯一
+
+```shell
+cat /sys/class/dmi/id/product_uuid
+ip a
+```
+
+### 3.允许iptables检查桥接流量
+
+- 确保`br_netfilter`模块加载: `lsmod|grep br_netfileter`
+
+- ```shell
+    cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+    br_netfilter
+    EOF
+    
+    cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+    net.bridge.bridge-nf-call-ip6tables = 1
+    net.bridge.bridge-nf-call-iptables = 1
+    EOF
+    sudo sysctl --system
+    ```
+
+### 4.禁用SELinux
 
 ```shell
 setenforce 0
 sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 ```
 
+### 5.安装, 启动Docker
+
+### 6.安装kubeadm, kubelet, kubectl
+
 添加源
 
 ```shell
-cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
 name=Kubernetes
 baseurl=http://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64
@@ -66,31 +86,15 @@ EOF
 安装 kubectl, kubeadm, kubectl
 
 ```shell
-yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
 
-systemctl enable --now kubelet
+# kubectl 自动补全
+echo "source <(kubectl completion zsh)" >> ~/.zshrc
+
+sudo systemctl enable --now kubelet
 ```
 
-## 4.kubeadm搭建
-
-**1.禁用 swap**
-
-```shell
-swapoff -a
-```
-
-**2.检查`product_uuid`和mac地址, 确保每台机器唯一**
-
-```shell
-cat /sys/class/dmi/id/product_uuid
-ip a
-```
-
-**3.安装Docker.**
-
-**4.安装kubeadm, kubelet, kubectl**
-
-**5.初始化集群**
+### 7.初始化集群
 
 - `kubeadm init`
 
@@ -106,17 +110,18 @@ ip a
         k8s.gcr.io/coredns:1.7.0
         ```
 
-- 镜像无法下载的解决方案:
-    - 修改tag满足镜像[csdn](https://blog.csdn.net/zhongbeida_xue/article/details/104615259)
+- 镜像无法下载的解决方案(更换`registry.aliyuncs.com/google_containers`):
+    - **方案1:**修改tag满足镜像[csdn](https://blog.csdn.net/zhongbeida_xue/article/details/104615259)
 
-    - 使用kubeadm配置文件, 通过在配置文件中指定docker仓库[csdn](https://blog.csdn.net/zhongbeida_xue/article/details/104615259)
+    - **方案2:**使用kubeadm配置文件, 通过在配置文件中指定docker仓库[csdn](https://blog.csdn.net/zhongbeida_xue/article/details/104615259)
         - `kubeadm config print init-defaults > kubeadm.yaml`: 导出配置文件.
         - 修改`imageRepository: k8s.gcr.io` --> `imageRepository: registry.aliyuncs.com/google_containers`
+        - 修改`advertiseAddress`地址为master地址.
         - `kubeadm config images pull --config kubeadm.yaml`: 下载镜像.
         - `kubeadm init --config kubeadm.yaml`: 
     - `kubeadm init --image-repository registry.aliyuncs.com/google_containers`
 
-**6.配置kubectl**
+### 8.配置kubectl
 
   `mkdir -p $HOME/.kube`
   `sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config`
@@ -126,9 +131,21 @@ root用户, 可以直接使用:
 
   `export KUBECONFIG=/etc/kubernetes/admin.conf`
 
-## 4.证书
+### 9.安装Pod网络附加组件
 
-### 1.证书生成
+> 必须部署一个基于Pod网络插件的容器网络接口(**CNI**), 以便Pod可以相互通信, 在安装网络之前, 集群DNS不会启动.
+>
+> [参考](https://docs.projectcalico.org/getting-started/kubernetes/quickstart)
 
-### 2.配置更新
+- *需要`kubeadm init`时, 设置 `pod-network-cidr`值*
+- `kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml`
+- `kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml`
 
+## 4.kubectl
+
+- `get`: 显示资源(pods, deplyments, nodes...)
+- `apply`: 通过文件对资源进行配置.
+- `attach`: 附加到已经运行的容器.
+- `exec`: 在容器中执行命令.
+- `cluster-info`:  
+- `describe`: 描述详细信息.
