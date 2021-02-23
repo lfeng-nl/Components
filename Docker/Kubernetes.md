@@ -167,6 +167,8 @@ metadata:
   labels:
     app: myapp
 spec:
+  # 重启策略 Always, OnFailure, Never
+  restartPolicy: OnFailure
   containers:
   - name: myapp-container
     image: busybox
@@ -180,26 +182,34 @@ spec:
     command: ['sh', '-c', "until nslookup mydb.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for mydb; sleep 2; done"]
 ```
 
-#### 1.生命周期
+#### 1.状态和生命周期
 
-- `Pending` --> `Running` --> `Successed/Failed`
-- Pod生命周期内只会被调度一次. 一旦被分配到节点上, Pod会运行到停止. Pod自身不具有自愈能力.
+- 状态`Waiting, Running, Terminalted`
+    - 可以通过`kubectl describe pod xxx`参看当前状态.
+- Pod的生命周期 可以描述为: 创建, 调度到Node上部署运行, 删除.
+    - `Pending -> Running -> Succeeded/Failed`
+    - `Pending`: Pod被创建, 但是容器还未完全创建. 包括容器镜像下载, Pod调度等阶段.
+    - `Running`: Pod已被调度到Node上.
+    - `Succeeded`: Pod中所有容器正常退出.
+    - `Failed`: Pod中所有容器退出. 
+- **重启策略**
+    - `Always, OnFailure, Never`
 
-#### 2.InitContainer
+#### 2.spec.initContainer
 
 > 比`spec.containers`定义的用户容器先启动. 并且会按照顺序逐一启动.
 
 - 每个Init容器会在网络和数据卷初始化之后按顺序启动.**每个Init容器成功退出后才会启动下一个Init容器**.
 
-#### 3.重要字段
+#### 3.Pod中的重要定义
+
+- `spec.initContainer`: 初始化容器. 比`spec.containers`定义的用户容器先启动. 并且会按照顺序逐一启动. 每个Init容器会在网络和数据卷初始化之后按顺序启动.**每个Init容器成功退出后才会启动下一个Init容器**.
 
 - `spec.restartPolicy`: 重启策略. `Always|OnFailure|Never`.
 
 - `spec.nodeSelector`: 将Pod调度到指定的node上.
 - `spec.hostALiases`: 定义Pod的hosts文件内容.
 - `spec.containers`: 容器信息.
-
-#### 4.健康检查
 
 ### 2.Deployment
 
@@ -359,7 +369,12 @@ spec:
 
     - 
 
-## 4.CNI
+## 4.网络
+
+### 4.1 网络模型
+
+- Kubernetes**以Pod为单位分配IP**, Pod内部共享一个网络堆栈, IP-per-Pod模型.
+- 
 
 ## 5.安全
 
