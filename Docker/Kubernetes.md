@@ -145,7 +145,9 @@ spec:
 
 ### 2.Pod
 
-> **Pod，实际上是在扮演传统基础设施里“虚拟机”的角色；而容器，则是这个虚拟机里运行的用户程序**
+> **Pod，实际上是在扮演传统基础设施里“虚拟机”的角色；而容器，则是这个虚拟机里运行的用户程序**.
+>
+> 所以, 像网络, 安全等都是Pod层级的.
 
 - 只是一个逻辑概念, 通常不需要直接创建, 而是使用Deployment或Job这类工作负载来创建Pod.
     - 类似的工作负载资源有: Deployment, StatefulSet, DaemonSet. 
@@ -194,6 +196,12 @@ spec:
     - `Failed`: Pod中所有容器退出. 
 - **重启策略**
     - `Always, OnFailure, Never`
+- **健康检查: [probe](https://kubernetes.io/zh/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)**
+    - 可以通过: `exec, tcpSocket, httpGet`处理程序.
+    - `livenessProbe`: 容器的自定义健康检查, 失败K8s将杀死容器.
+- 生命周期钩子. `spec.containers.lifecycle`
+    - `postStart`: 容器启动后执行指定操作.
+    - `perStop`: 容器被杀死前.
 
 #### 2.spec.initContainer
 
@@ -201,15 +209,26 @@ spec:
 
 - 每个Init容器会在网络和数据卷初始化之后按顺序启动.**每个Init容器成功退出后才会启动下一个Init容器**.
 
-#### 3.Pod中的重要定义
+#### 3.Pod网络
+
+- 每个Pod有自己的的网络命名空间, 有自己的IP.
+
+#### 4.调度
+
+- `spec.nodeSelector`: 将Pod和Node进行绑定.
+    - 指定一组标签, 匹配调度携带了标签的节点.
+- `sepc.nodeName`: 调度器设置, 调试或测试时使用.
+
+#### 4.属性说明
+
+- `spec.containers`: 容器定义.
 
 - `spec.initContainer`: 初始化容器. 比`spec.containers`定义的用户容器先启动. 并且会按照顺序逐一启动. 每个Init容器会在网络和数据卷初始化之后按顺序启动.**每个Init容器成功退出后才会启动下一个Init容器**.
-
 - `spec.restartPolicy`: 重启策略. `Always|OnFailure|Never`.
-
 - `spec.nodeSelector`: 将Pod调度到指定的node上.
 - `spec.hostALiases`: 定义Pod的hosts文件内容.
-- `spec.containers`: 容器信息.
+
+- `spec.volumes`: 定于卷.
 
 ### 2.Deployment
 
@@ -312,9 +331,19 @@ spec:
       targetPort: 9376
 ```
 
-### 5.Secret
+### 投射数据卷 Projected Volume
 
-> 将Pod想要访问的加密数据, 存放到Etcd中, 然后就可以通过在Pod的容器里挂载Volume的方式, 访问到这些Secret.
+> 为容器提供预先定义好的数据, 如配置信息. 包括
+>
+> Secret:
+>
+> ConfigMap:
+>
+> Downward API
+>
+> ServiceAccountToken:
+
+- Secret: 将Pod想要访问的加密数据, 存放到Etcd中, 然后就可以通过在Pod的容器里挂载Volume的方式, 访问到这些Secret.
 
 ### 6.ConfigMap
 
