@@ -111,15 +111,21 @@ sudo systemctl enable --now kubelet
         ```
 
 - 镜像无法下载的解决方案(更换`registry.aliyuncs.com/google_containers`):
+    
     - **方案1:**修改tag满足镜像[csdn](https://blog.csdn.net/zhongbeida_xue/article/details/104615259)
-
-    - **方案2:**使用kubeadm配置文件, 通过在配置文件中指定docker仓库[csdn](https://blog.csdn.net/zhongbeida_xue/article/details/104615259)
+- **方案2:**使用kubeadm配置文件, 通过在配置文件中指定docker仓库[csdn](https://blog.csdn.net/zhongbeida_xue/article/details/104615259)
         - `kubeadm config print init-defaults > kubeadm.yaml`: 导出配置文件.
-        - 修改`imageRepository: k8s.gcr.io` --> `imageRepository: registry.aliyuncs.com/google_containers`
-        - 修改`advertiseAddress`地址为master地址.
-        - `kubeadm config images pull --config kubeadm.yaml`: 下载镜像.
-        - `kubeadm init --config kubeadm.yaml`: 
+            - 修改`imageRepository: k8s.gcr.io` --> `imageRepository: registry.aliyuncs.com/google_containers`
+            - 修改`advertiseAddress`地址为master地址.
+            - `kubeadm config images pull --config kubeadm.yaml`: 下载镜像.
+            - `kubeadm init --config kubeadm.yaml`: 
+    
     - `kubeadm init --image-repository registry.aliyuncs.com/google_containers`
+    
+- **需要配置网络的CIDR, 网络附加组件使用**
+
+    - 命令方式: `--pod-network-cidr=192.168.0.0/16`
+    - 配置文件方式: `networking.podSubnet: 192.168.0.0/16`
 
 ### 8.配置kubectl
 
@@ -139,7 +145,18 @@ root用户, 可以直接使用:
 
 - *需要`kubeadm init`时, 设置 `pod-network-cidr`值*
 - `kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml`
-- `kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml`
+
+`kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml`
+
+### 10.开启master节点的调度功能
+
+- 开启: `kubectl taint node node01 node-role.kubernetes.io/master-`
+- 关闭: `kubectl taint node node01 node-role.kubernetes.io/master="":NoSchedule`
+- 深度了解: `Taints和Tolerations`
+
+## 3. Kubeflow pipeline
+
+[部署](https://www.kubeflow.org/docs/components/pipelines/installation/standalone-deployment/)
 
 ## 4.kubectl
 

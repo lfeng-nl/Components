@@ -331,19 +331,63 @@ spec:
       targetPort: 9376
 ```
 
-### 投射数据卷 Projected Volume
+### 卷
 
-> 为容器提供预先定义好的数据, 如配置信息. 包括
->
-> Secret:
->
-> ConfigMap:
->
-> Downward API
->
-> ServiceAccountToken:
+> 包含一些数据的目录
 
-- Secret: 将Pod想要访问的加密数据, 存放到Etcd中, 然后就可以通过在Pod的容器里挂载Volume的方式, 访问到这些Secret.
+#### 1.挂载
+
+```yaml
+spec:
+  containers:
+  - name: c1
+    volumeMounts:
+    - name: mysql-cred                # 挂载卷的名称
+      mountPath: "/projected-volume"  # 挂载点
+      readOnly: true                  # 权限
+```
+
+#### 2.卷的类型
+
+- `projected`卷: 能够将**若干现有的卷来源映射到同一目录**. 来源包含`secret, downwardAPI, configMap, serviceAccountToken`
+
+  - ```yaml
+    spec:
+      volumes:
+        - name: project-volume
+          projected:
+            sources:
+            - secret:
+                name: secret-name
+            - configMap:
+                name: config-map
+    ```
+
+- `configMap`: 将`configMap`对象中存储到数据转换为卷, 然后可以被Pod中的容器挂载.
+
+  - ```yaml
+    spec:
+      volumes:
+        - name: config-vol            # 卷的名称
+          configMap: 
+            name: config-map-name     # configMap 的名称
+            items:  
+              - key: key              # 需要映射的key
+                path: key-path        # key映射到底path
+    ```
+
+- `hostPath`:  将主机节点挂载
+
+  - ```yaml
+    spec:
+      volumes:
+      - name: volume-name
+        hostPath:
+          path: /data
+          type: Directory
+    ```
+
+- `PVC`: 用于挂载`PV`到pod. 
 
 ### 6.ConfigMap
 
