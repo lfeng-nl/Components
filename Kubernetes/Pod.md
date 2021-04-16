@@ -31,3 +31,4 @@
 > Init容器会按照顺序逐个运行, 每个Init容器须运行成功, 下一个才能运行. 
 >
 > `spec.initContainers`
+
